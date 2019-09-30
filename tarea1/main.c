@@ -7,29 +7,37 @@
 #define MAXELEMENTS 100
 int main (int argc, char **argv) { 
 
-	int n;
+	int n,j;
+	char *temp;
+	list_e *space;
+
+
 	printf("how many elements: "); 
 	scanf("%d",&n); 
 
 	/*	Asking space for list and elements	*/
-	list_e *space = (list_e*) malloc( MAXELEMENTS * sizeof(list_e) );		
-	list *my_list = (list*) malloc( sizeof(list_e) );
+	/* Pensar en estooooooo */
+	//list_e **space = (list_e**) malloc( MAXELEMENTS * sizeof(list_e*) );		
+	list *my_list = (list*) malloc( sizeof(list) );
 	
 	list_init(my_list);
 
-	int j; 
-	char *temp = malloc( sizeof(char*) ); 			//Any pointer type needs a memory address to work
 
 	/* 	Initializing and assignment 	*/	
 	for(j=0; j<n; j++) { 
-
+		
+		temp = malloc( 50*sizeof(char) ); 			//Any pointer type needs a memory address to work
 		printf("contenido: "); 
 		scanf("%s",temp); 
+		space = (list_e*) malloc( sizeof(list_e) ) ; 
+		//space[j] = (list_e *)malloc(sizeof(list_e));
+		//list_e_init(space[j], temp); 
+		list_e_init(space, temp);			
 
-		list_e_init(&space[j], temp); 
+		//list_insert(my_list, space[j]); 
+		list_insert(my_list, space); 
+ 			//%p format writes in hex
 
-		list_insert(my_list, space[j]); 
-		//printf("Size of list: %p\n",my_list->size); 			//%p format writes in hex
 	}
 	list_print(*my_list);
 		

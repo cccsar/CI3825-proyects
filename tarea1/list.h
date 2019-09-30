@@ -17,7 +17,7 @@ typedef struct {
 } list;
 
 void list_init(list *l);  
-void list_insert(list *l, list_e e);
+void list_insert(list *l, list_e *e);
 void list_print(list l);
 
 #endif
