@@ -1,4 +1,6 @@
 
+#ifndef __LIST__ 
+#define __LIST__
 
 typedef struct list_element{ 
 	char *content; 
@@ -14,7 +16,8 @@ typedef struct {
 	int size; 
 } list;
 
-void list_init(list l);  
-void list_insert(list l, list_e e);
+void list_init(list *l);  
+void list_insert(list *l, list_e e);
 void list_print(list l);
 
+#endif

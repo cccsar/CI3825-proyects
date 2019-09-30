@@ -8,6 +8,6 @@ proy: main.o list.o
 	@echo "compiling... "
 	gcc -I. -c $< 
 
-clear: 
+clean: 
 	@echo "removing object and linked files"
 	rm -rvf *.o proy

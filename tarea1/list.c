@@ -7,23 +7,26 @@ void list_e_init(list_e *e, char* c) {
 	e->next = NULL; 
 }
 
-void list_init(list l) { 
-	l.head = l.tail = NULL; 
+/* List set of definitions */
+
+void list_init(list *l) { 
+	l->head = l->tail = NULL; 
+	l->size = 0;
 }
 
-void list_insert(list l, list_e e) {
+//Los structs/tipos se pasan por valor.. hay que pasar apuntadores para modificar data members
+void list_insert(list *l, list_e e) {
 
-	if ( l.size==0 ) 
+	if (l->size == 0) 
 	{
-		l.head = &e; 
-		l.tail = &e;
+		l->head = &e; 
+		l->tail = &e;
 	}
-	else 
-	{
-		(l.tail)->next = &e; 
-		l.tail = &e; 
+	else {
+		(l->tail)->next = &e; 
+		l->tail = &e; 
 	}
-	++l.size; 
+	l->size ++; 
 }
 
 void list_print(list l) { 
@@ -33,14 +36,15 @@ void list_print(list l) {
 	else 
 	{
 		int i; 
-		list_e dummie = *(l.head);
+		list_e *dummie = l.head;
 		for(i=0; i<l.size; i++) { 
-			printf("%s | ",dummie.content); 
-			dummie = *(dummie.next);
+			printf("%p ",dummie->content); 
+			dummie = dummie->next;
 		}
+
 		printf("\n"); 
 
-		printf("head: %d\ntail: %d\nsize: %d", *(l.head)->content, *(l.tail)->content, l.size); 
+		printf("head: %s\ttail: %s\tsize: %d\t", (l.head)->content, (l.tail)->content, l.size); 
 	}
 
 
