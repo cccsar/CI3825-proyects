@@ -1,12 +1,24 @@
-// Main
+/*
+ * Archivo: main.c
+ *
+ * Descripcion: Entorno de ejecucion principal. En este archivo se implementa
+ * al ejecutable freecpal. Este recibe como argumento un numero de archivos, junto
+ * con los nombre de los mismo. Retorna a la salida estandar cada palabra
+ * junto con su frecuencia de aparicion en cada archivo, ordenadas primero por 
+ * frecuencia, y de ser iguales las frecuencias, lexicograficamente.
+ *
+ * Autor: Cesar Alfonso Rosario Escobar
+ */
 
 #include <stdio.h> 
 #include <stdlib.h>
-#include <string.h>
 #include "list.h"
 
-#define MAX_ELEMENTS 100
 #define WORD_SIZE 20
+
+void memoryError() {
+	perror("Error, memoria insuficiente\n");
+}
 
 int main (int argc, char **argv) { 
 
@@ -14,56 +26,78 @@ int main (int argc, char **argv) {
 	int i,j;
 	char *current_word;
 	node *space;
-	
-	/*	considering wether the input is properly formatted	*/
-	if (argc != atoi(argv[1]) + 2) { 
-		printf("Error, format is:\t ./proy <num files> files ...\n"); 
+	list *my_list;
+
+	if (argc != atoi(argv[1]) + 2) 
+	{ 
+		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
+			"{lista de nombre de archivos}\n"); 
 		exit(-1); 
 	}
 
-	/*	Asking space for list 		*/
-	list *my_list = (list*) malloc( sizeof(list) );
+ 	my_list = (list*) malloc( sizeof(list) );
+	if (!my_list)
+	{
+		memoryError();
+		exit(-2);
+	}
 	listInit(my_list);
 
 	for(i=2; i<atoi(argv[1])+2; i++) {
 
 		fp = fopen(argv[i],"r"); 
 
-		//		see wether to handle it
-		if (fp ==  NULL ) { 
-			printf("Error opening file\n"); 
-			exit(-2); 
+		if (!fp ) 
+		{ 
+			perror("Error abriendo archivo\n"); 
+			exit(-3); 
 		}
 
-		/*	allocate space for initial word 	*/
-		current_word = malloc( WORD_SIZE*sizeof(char) ); 			
+		/*Se reserva espacio para la primera palabra del archivo*/
+		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
+		if (!current_word)
+		{
+			memoryError();	
+			exit(-2);
+		}
+	
+		while( fscanf(fp,"%s",current_word) != EOF) { 
 
-		while( fscanf(fp,"%s",current_word) != EOF) { //HANDLE WHEN NOT PROPPERLY READ
-
-			/*	 allocate space for a node and initiallize it	*/
 			space = (node*) malloc( sizeof(node) ) ; 
-			listElInit(space, current_word); 
-		
-			/*	insert element into list	*/
-			listInsert(my_list, space); 
+			if(!space)
+			{
+				memoryError(); 	
+				exit(-2);
+			}
 
-			/*	allocate space for any word other than initial	*/	
-			current_word = malloc( WORD_SIZE*sizeof(char) ); 			//pendiente aqui
+			nodeInit(space, current_word); 
+
+			/*En caso de que solo la frecuencia de un elemento */
+			/* se aumente como se nodo ya esta creado, se libera*/
+			/* la memoria que se almaceno para insertarlo.*/
+			if (listInsert(my_list, space) < 0)
+			{
+				free(space);
+				free(current_word);
+			}
+
+			/*Se reserva espacio para la i-esima palabra*/ 
+			/* del archivo*/
+			current_word = (char*) malloc(WORD_SIZE*sizeof(char)); 			
+			if(!current_word)
+			{
+				memoryError(); 
+				exit(-2); 
+			}
+
 		}
+
 
 	} 
 
-	/* 	Initializing and assignment 	*/	
-	//tc for swap
-	//	two elements
-	//	!two elements & first,last
-	//	any inside element
-	//	one head or tail and any other	
-	//list_swap(my_list, my_list->head, (my_list->tail)->prev); 
+	listSort(my_list);	
 	listPrint(*my_list);
 
-		
-
-	return 0; 
+	exit(0);
 }
 

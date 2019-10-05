@@ -1,13 +1,15 @@
+OPTS=-ansi -Wpedantic
 
+all: freecpal
 
-proy: main.o list.o 
+freecpal: main.o list.o 
 	@echo "linking... "
-	gcc -o proy main.o list.o
+	gcc ${OPTS} -o freecpal main.o list.o
 
 %.o: %.c
 	@echo "compiling... "
-	gcc -I. -c $< 
+	gcc ${OPTS} -I. -c $< 
 
 clean: 
 	@echo "removing object and linked files"
-	rm -rvf *.o proy
+	rm -rvf *.o freecpal

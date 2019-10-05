@@ -1,39 +1,60 @@
+/*
+ * Archivo: list.c
+ *
+ * Descripcion: Archivo fuente para las estructuras de datos list y node
+ *
+ * Autor: Cesar Alfonso Rosario Escobar
+ */
+
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "list.h"
 
 
-/*Funcion: listElInit
+/*Funcion: nodeInit
  * ------------
  *	Inicializa un elemento de lista, asignando los valores iniciales
- *	de sus atributos. El nodo se inicializa con la palabra a la que 
- *	estara asociado y con frecuencia 0, pues aun no esta en una lista.		###
+ *	de sus atributos. 
  *
  *	e: elemento a inicializar
  *	c: contenido del miembro de funcion "word"
- *
- * 	retorna: 	###
  */
-void listElInit(node *e, char* c) {
+void nodeInit(node *e, char* c) {
 	e->next = NULL; 
 	e->prev = NULL;
 	e->frequency = 0;
 	e->word = c;
-
 }
 
 
+/*Funcion: nodeSwap
+ * ------------
+ *	Cambia los valores de los atributos "word" y "frequency" entre 
+ *	dos nodos
+ *
+ *	u,v: nodos a intercambiar
+ */
+void nodeSwap(node *u, node *v) {
+	
+	char *temp_word; 
+	int temp_frequency ;
+
+	temp_word = u->word; 
+	u->word = v->word; 
+	v->word = temp_word;
+
+	temp_frequency = u->frequency; 
+	u->frequency = v->frequency; 
+	v->frequency = temp_frequency; 
+}
+
 /*Funcion: listInit
  * ------------
- *	Inicializa una lista.			###
- *
+ *	Inicializa una lista.			
  *
  *	l: lista a inicializar
- *
- *	retorna:	###
  */
-void listInit(list *l) { 
+void listInit(list *l) {
 	l->head = l->tail = NULL; 
 	l->size = 0;
 }
@@ -41,48 +62,49 @@ void listInit(list *l) {
 
 /*Funcion: listSearch
  * ------------
- *	Busca un elemento en una lista dada. Para esto, compara el atributo "word"
- *	del elemento dado, con el atributo "word" de cada nodo en la lista. 
- *	
+ *	Busca un elemento en una lista dada. Para esto, compara el atributo 
+ *	"word" del elemento dado, con el atributo "word" de cada nodo en la 
+ *	lista. 
  *
  *	l: lista en donde se realizara la busqueda
  *	e: elemento a buscar
  *
- *	retorna:	###
- *
+ *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo 
+ *	contrario retorna NULL
  */
-int listSearch(list *l, node *e) {
+node* listSearch(list *l, node *e) {
 
-	node *dummie = l->head; 	/*	dummie es un iterador sobre los elementos	*/
-					/*	de la lista	*/
+	/*dummie actua como un iterador sobre los elementos de la lista*/
+	
+	node *dummie = l->head; 	
 	int count = 0;
 
 	while( dummie != NULL ) {
 		
-		if( strcmp(dummie->word, e->word) == 0 ) {
-			return count; 
-		}
+		if( strcmp(dummie->word, e->word) == 0 ) 
+			return dummie; 
+
 		dummie = dummie->next;
 		count++;
 	}
 
-	return -1;
+	return NULL;
 }
 
 
-//podria modificar el tipo de retorno para que sea un int que diga si aumento frecuencia o inserto a la lista
-// esto para hacer el free respectivo del nodo
 /*Funcion: listInsert
  * ------------
  *	Inserta un elemento en una lista. La funcion se asegura de ajustar cada 
- *	atributo de los elementos a cambiar, asi como de la lista (de ser necesario)
+ *	atributo de los elementos a cambiar, asi como atributos de la lista 
+ *	(de ser necesario)
  *
  *	l: lista en donde se insertara el elemento
  *	e: elemento a insertar
  *
- *	retorna:	###
+ *	retorna: Un entero que representa si el elemento fue insertado, o se
+ *	aumento su frecuencia
  */
-void listInsert(list *l, node *e) {
+int listInsert(list *l, node *e) {
 
 	if (l->size == 0) 
 	{
@@ -93,16 +115,12 @@ void listInsert(list *l, node *e) {
 		l->size++; 
 	}
 	else {
-		int contains = listSearch(l, e); 
+		node *contains = listSearch(l, e); 
 		
-		if (contains > 0) 
+		if (contains != NULL) 
 		{
-			int i;
-			node *dummie = l->head; 
-			for(i=0; i<contains; i++) 
-				dummie = dummie->next; 
-
-			dummie->frequency++; 
+			contains->frequency++;	
+			return -1;
 		}
 		else {
 			(l->tail)->next = e; 
@@ -113,96 +131,51 @@ void listInsert(list *l, node *e) {
 			l->size++; 
 		}
 	}
+
+	return 1;
 }
 
 
-/*Funcion: listSwap
- * ------------
- *
- *
- */
-void listSwap(list *l, node *u, node *v) {
-	
-	node *temp; 
-
-	/*	Aqui ajusta atributos de la lista si algun elemento es cabecera		*/
-	/* 	o cola	*/
-	if (l->head == u)
-		l->head = v;
-	else if (l->head == v) 
-		l->head = u;
-
-	if (l->tail == u)
-		l->tail = v; 
-	else if (l->tail == v)
-		l->tail = u;
-	
-	/* 	Aqui considera que los nodos a cambiar sean consecutivos 	*/	
-	if (u->next == v) 
-	{
-		temp = v->next; 
-		v->next = u;
-		u->next = temp;
-
-		temp = u->prev;
-		u->prev = v;
-		v->prev = temp;
-
-	}
-	else if (u->prev == v) { 
-			
-		temp = u->next; 
-		u->next = v; 
-		v->next = temp; 
-
-		temp = v->prev;
-		v->prev = u; 
-		u->prev = temp; 		
-			
-	}
-	else { 
-		/*	Aqui considera que no sean consecutivos		*/		
-		temp = v->next; 
-		v->next = u->next; 
-		u->next = temp; 	
-
-		temp = u->prev; 
-		u->prev = v->prev;
-		v->prev = temp;
-	}
-
-	/* 	Se ajustan los apuntadores de los nodos vecinos pero no involucrados 	*/	
-	/*	en el swap	*/	
-	if (u->next != NULL )
-		(u->next)->prev = u; 
-
-	if (u->prev != NULL )
-		(u->prev)->next = u; 
-
-	if (v->next != NULL ) 
-		(v->next)->prev = v; 
-
-	if (v->prev != NULL ) 
-		(v->prev)->next = v; 
-}
-
-
-// 1 si es exitoso, 0 si la lista esta vacia o tiene un elemento?
 /*Funcion: listSort
  * ------------
+ *	Ordena los elementos de la lista por frecuencia, y a la 
+ *	vez lexicograficamente	usando una modificacion del 
+ *	algoritmo "insertion Sort"
  *
- *
+ *	l: lista a ordenar
  */
 void listSort(list *l) {
 
-	if (l->size > 1) {
+	if (l->size > 1) 
+	{
+		/*Se define a i como nodo, para poder usar una copia de*/ 
+		/* sus atributo mientras que j se define como apuntador para*/ 
+		/* realizar modificaciones los atributos del nodo apuntado*/
+		node i = *(l->head)->next; 
+		node *j ;
 
-		node *second = (l->head)->next; 
+		/*En el caso en el que 2 elementos tengan la misma*/
+		/*frecuencia, se comparan lexicograficamente*/
+		while (&i != NULL) { 
+			j = i.prev; 
+		
+			while(j!=NULL && (i.frequency >= j->frequency) ) { 
+				if (i.frequency > j->frequency) 
+					nodeSwap(j->next,j);
+				else 
+					if ( strcmp(i.word,j->word) < 0 )
+						nodeSwap(j->next,j); 
+					else 
+						break; 
+			
+		       		j=j->prev; 
+			}		
 
-		while (second != NULL) { 
-				
+			if (i.next == NULL)
+				break;
+
+			i=*(i.next); 	
 		}
-
 	}
 }
 
@@ -212,11 +185,8 @@ void listSort(list *l) {
  *	Imprime en consola el contenido de la lista
  *
  * 	l: lista a imprimir
- *
- * 	retorna:	###
- *
  */
-void listPrint(list l) { 
+void listPrint(list l) {
 
 	if (l.size==0) 
 		printf("Empty list\n"); 
@@ -227,12 +197,10 @@ void listPrint(list l) {
 		while (dummie != NULL ) { 
 			if (l.head == l.tail) 
 				break ;
-			printf("word \"%s\": %d times\n",dummie->word,dummie->frequency); 
+
+			printf("%s %d \n",dummie->word,dummie->frequency); 
 			dummie = dummie->next;
 		}
-
-		printf("\nhead: %s\ttail: %s\tsize: %d\t\n", (l.head)->word, (l.tail)->word, l.size); 
 	}
-
 
 }
