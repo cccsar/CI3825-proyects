@@ -16,8 +16,8 @@
  *	Inicializa un elemento de lista, asignando los valores iniciales
  *	de sus atributos. 
  *
- *	e: elemento a inicializar
- *	c: contenido del miembro de funcion "word"
+ *	e: apuntador al elemento a inicializar
+ *	c: cadena de caracteres insertar
  */
 void nodeInit(node *e, char* c) {
 	e->next = NULL; 
@@ -32,7 +32,7 @@ void nodeInit(node *e, char* c) {
  *	Cambia los valores de los atributos "word" y "frequency" entre 
  *	dos nodos
  *
- *	u,v: nodos a intercambiar
+ *	u,v: apuntadores a los nodos a intercambiar
  */
 void nodeSwap(node *u, node *v) {
 	
@@ -48,11 +48,12 @@ void nodeSwap(node *u, node *v) {
 	v->frequency = temp_frequency; 
 }
 
+
 /*Funcion: listInit
  * ------------
  *	Inicializa una lista.			
  *
- *	l: lista a inicializar
+ *	l: apuntador a la lista a inicializar
  */
 void listInit(list *l) {
 	l->head = l->tail = NULL; 
@@ -66,8 +67,8 @@ void listInit(list *l) {
  *	"word" del elemento dado, con el atributo "word" de cada nodo en la 
  *	lista. 
  *
- *	l: lista en donde se realizara la busqueda
- *	e: elemento a buscar
+ *	l: apuntador a la lista en donde se realizara la busqueda
+ *	e: apuntador al elemento a buscar
  *
  *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo 
  *	contrario retorna NULL
@@ -98,8 +99,8 @@ node* listSearch(list *l, node *e) {
  *	atributo de los elementos a cambiar, asi como atributos de la lista 
  *	(de ser necesario)
  *
- *	l: lista en donde se insertara el elemento
- *	e: elemento a insertar
+ *	l: apuntador a la lista en donde se insertara el elemento
+ *	e: apuntador al elemento a insertar
  *
  *	retorna: Un entero que representa si el elemento fue insertado, o se
  *	aumento su frecuencia
@@ -138,11 +139,12 @@ int listInsert(list *l, node *e) {
 
 /*Funcion: listSort
  * ------------
- *	Ordena los elementos de la lista por frecuencia, y a la 
- *	vez lexicograficamente	usando una modificacion del 
+ *	Ordena los elementos de la lista en forma decreciente por frecuencia, 
+ *	y luego, los elementos con la misma frecuencia se ordenan 
+ *	alfanumericamente. Todo esto  usando una modificacion del 
  *	algoritmo "insertion Sort"
  *
- *	l: lista a ordenar
+ *	l: apuntador a la lista a ordenar
  */
 void listSort(list *l) {
 
@@ -155,11 +157,13 @@ void listSort(list *l) {
 		node *j ;
 
 		/*En el caso en el que 2 elementos tengan la misma*/
-		/*frecuencia, se comparan lexicograficamente*/
+		/*frecuencia, se comparan sus atributos "word" para ver*/ 
+		/* ordenarlos alfanumericamente.*/ 
 		while (&i != NULL) { 
+
 			j = i.prev; 
-		
 			while(j!=NULL && (i.frequency >= j->frequency) ) { 
+
 				if (i.frequency > j->frequency) 
 					nodeSwap(j->next,j);
 				else 

@@ -31,7 +31,7 @@ int main (int argc, char **argv) {
 	if (argc != atoi(argv[1]) + 2) 
 	{ 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
-			"{lista de nombre de archivos}\n"); 
+			" {lista de nombre de archivos}\n"); 
 		exit(-1); 
 	}
 

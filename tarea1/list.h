@@ -31,8 +31,8 @@ typedef struct list_element{
  *------------
  *	Inicializa un elemento de lista
  *	
- *	e: elemento a inicializar
- *	c: contenido del miembro de funcion "word"
+ *	e: apuntador al elemento a inicializar
+ *	c: cadena de caracteres a insertar
  */
 void nodeInit(node *e, char *c);
 
@@ -41,9 +41,7 @@ void nodeInit(node *e, char *c);
  *------------
  *	Cambia los valores de los atributos "word" y "frequency" entre dos nodos
  *
- *	l: lista a usar
- *	u: primer elemento 
- *	v: segundo elemento
+ * 	u,v: apuntadores a los nodos a intercambiar.
  */
 void nodeSwap(node *u, node *v);
 
@@ -66,7 +64,7 @@ typedef struct {
  *------------
  *	Inicializa una lista
  *
- *	l: lista a inicializar
+ *	l: apuntador a la lista a inicializar
  */
 void listInit(list *l);
 
@@ -75,8 +73,8 @@ void listInit(list *l);
  *------------
  *	Busca un elemento en una lista dada
  *
- *	l: lista en donde se realizara la busqueda
- *	e: elemento a buscar
+ *	l: apuntador a la lista en donde se realizara la busqueda
+ *	e: apuntador al elemento a buscar
  *
  *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo contrario
  *	retorna NULL
@@ -88,8 +86,8 @@ node* listSearch(list *l, node *e);
  *------------
  *	Inserta, o aumenta la frecuencia de un elemento en la lista
  *
- *	l: lista en donde se insertara el elemento
- *	e: elemento a insertar
+ *	l: apuntador a la lista en donde se insertara el elemento
+ *	e: apuntador al elemento a insertar
  *
  *	retorna: Un entero que representa si el elemento fue insertado, o se aumento su
  *	frecuencia
@@ -101,7 +99,7 @@ int listInsert(list *l, node *e);
  * ------------
  *	Ordena los elementos de la lista por frecuencia 
  *
- *	l: lista a ordenar
+ *	l: apuntador a la lista a ordenar
  */
 void listSort(list *l);
 
