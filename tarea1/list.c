@@ -199,10 +199,10 @@ void listPrint(list l) {
 		node *dummie = l.head;
 		
 		while (dummie != NULL ) { 
-			if (l.head == l.tail) 
-				break ;
 
 			printf("%s %d \n",dummie->word,dummie->frequency); 
+			if (l.head == l.tail) 
+				break ;
 			dummie = dummie->next;
 		}
 	}

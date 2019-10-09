@@ -16,6 +16,10 @@
 
 #define WORD_SIZE 20
 
+/* Funcion memoryError
+ * -------
+ *	Funcion que implime un mensaje estandar de error de memoria.
+ */
 void memoryError() {
 	perror("Error, memoria insuficiente\n");
 }
@@ -73,7 +77,7 @@ int main (int argc, char **argv) {
 			nodeInit(space, current_word); 
 
 			/*En caso de que solo la frecuencia de un elemento */
-			/* se aumente como se nodo ya esta creado, se libera*/
+			/* se aumente como ese nodo ya esta creado, se libera*/
 			/* la memoria que se almaceno para insertarlo.*/
 			if (listInsert(my_list, space) < 0)
 			{
