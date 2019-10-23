@@ -94,11 +94,9 @@ off_t getFieldSize(int fd_orig, int roof,int floor) {
 	
 	current_offset -= 1;
 
-	//lseek(fd_orig, 1, -1); // previous_imp
 	//fprintf(stdout,"size of field %d\n",current_offset); #dbg#
 
 	required_size = current_offset-floor;
-	//required_size = just_read - floor; //previous_imp
 	//printf("name size: %ld\n",required_size);  //#dbg#
 	
 	/* relocate the offset in the beggining. This could be avoided */
