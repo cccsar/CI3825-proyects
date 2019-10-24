@@ -11,7 +11,7 @@
 #define FNAME_LIMIT 256 //this is up to 256 char*
 #define FMODE_LIMIT 10  //this is int 
 #define FSIZE_LIMIT 20 	//this is long int
-#define MAX_RW 16
+#define NFIELDS 5
 #define STUFF_TOKEN ''
 
 #define MY_PERM S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH
@@ -77,28 +77,14 @@ off_t getFieldSize(int fd_orig, int roof,int floor) {
 	while(char_read != 2) {
 		just_read = read(fd_orig, &char_read, 1);
 		current_offset += just_read; 
-		/*
-		 * previous imp
-		if (char_read[0] == '@') 
-		{
-			current_offset = lseek(fd_orig, -1, SEEK_CUR);
-			break;
-		}
-		else 
-			current_offset = lseek(fd_orig, -2, SEEK_CUR);
-		lseek(fd_orig, -2, SEEK_CUR);
-		lseek(fd_orig, 1, SEEK_CUR);
-		*/
 		
 	}
 	
 	current_offset -= 1;
 
-	//lseek(fd_orig, 1, -1); // previous_imp
 	//fprintf(stdout,"size of field %d\n",current_offset); #dbg#
 
 	required_size = current_offset-floor;
-	//required_size = just_read - floor; //previous_imp
 	//printf("name size: %ld\n",required_size);  //#dbg#
 	
 	/* relocate the offset in the beggining. This could be avoided */
@@ -151,14 +137,15 @@ char *getField(int fd, int roof, int floor) {
  */
 int main (int argc, char **argv) {  			//extract file
 	
-	int fd_s, ith_roof, ith_floor, turn;
+	int fd_s, ith_roof, ith_floor, turn, pointer, i ; 
 	long stop;
 	char *file_name, *fmode, *fsize;
 	mode_t file_mode;
 	off_t file_size;
-	struct stat mytar_state;
+	struct stat mytar_state, current_filename;
 
 	ith_floor = ith_roof = 0;
+	pointer =0 ;
 
 
 	/*ARGV[1] is source file, and contains description for destination files*/
@@ -172,9 +159,18 @@ int main (int argc, char **argv) {  			//extract file
 	stop = mytar_state.st_size;
 	fprintf(stdout,".mytar total size: %ld\n",stop); //#dbg
 	
+	while(pointer != stop) {
+		
+		for(i=0; i<NFIELDS; i++) {
 
+
+		}
+
+
+	}
+	/*
 	while( ith_roof != stop ) { 				//### Esto puede traer errores
-		/* All of this is possible thanks to offset updating.
+		// All of this is possible thanks to offset updating.
 		 * To begin with, ith_floor and ith_roof represent, respectively,
 		 * the symbolic beggining of next-to-process field, and the simbolic
 		 * limit of next to process field.
@@ -182,19 +178,19 @@ int main (int argc, char **argv) {  			//extract file
 		 * As a field is parsed, the limits are updated, and when a file is written,
 		 * they need to be coincident, hence the +=FSIZE_LIMIT in the directory case.
 		 *
-		 */
+		 //
 		
-		/* init/udpate mytar file offset */
+		// init/udpate mytar file offset //
 		ith_roof +=  FNAME_LIMIT;
 
-		/* get filename */
+		// get filename //
 		file_name = getField(fd_s, ith_roof, ith_floor) ;
 
-		/* 	update mytar file offset */
+		// 	update mytar file offset //
 		ith_roof += FMODE_LIMIT;
 		ith_floor += FNAME_LIMIT;
 
-		/* get mode */	
+		// get mode //	
 		fmode = getField(fd_s, ith_roof, ith_floor);
 		file_mode = (mode_t) atol(fmode);
 
@@ -202,7 +198,7 @@ int main (int argc, char **argv) {  			//extract file
 		fprintf(stdout,"file mode: %d\n",file_mode);	//#dbg#
 
 
-		/* actions depending on the type of file */
+		// actions depending on the type of file //
 		if ( (file_mode & S_IFMT) == S_IFDIR ) 
 		{
 			struct stat test_state;
@@ -224,11 +220,11 @@ int main (int argc, char **argv) {  			//extract file
 			char *fsize;
 			long file_size;
 
-			/* 	update mytar file offset */
+			// 	update mytar file offset //
 			ith_roof += FSIZE_LIMIT;
 			ith_floor += FMODE_LIMIT;
 
-			/* get file size */
+			// get file size //
 			fsize = getField(fd_s, ith_roof, ith_floor) ;
 			file_size = (unsigned long) atol(fsize);
 
@@ -246,17 +242,17 @@ int main (int argc, char **argv) {  			//extract file
 			
 				fileWriter(fd_s, ith_fd, file_size); 
 
-				/* 	update mytar file offset */
+				// 	update mytar file offset //
 				ith_roof += file_size;
 				ith_floor += file_size+FSIZE_LIMIT;
 
-				/* close the ith file descriptor */
+				// close the ith file descriptor //
 				close(ith_fd);
 			}
 		}
 		printf("\n");
 	}	
-
+	*/
 	/*close source file descriptor */
 	close(fd_s);
 
