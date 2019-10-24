@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include "parser.h"
 /*
- * Function: parse
+ *  parse
  * -------------------
  *  Read the command line and store that values in an organized structure
  *
@@ -124,14 +124,14 @@ mytar_instructions* parse(int num_arguments, char const *arguments[]){
 	return instructions;
 }
 /*
- * Function: instructions_init
+ *  instructionsInit
  * -------------------
  *  Initialize the structure tar_instructions
  *
  * 	Return: The pointer to the position of the struct mytar_instructions.
  *					If an error exist, the return value is NULL
  */
-mytar_instructions* instructions_init(){
+mytar_instructions* instructionsInit(){
 	/*Counter of the for cycle*/
 	int i;
 	/*The new mytar_instructions struct*/
@@ -156,7 +156,7 @@ mytar_instructions* instructions_init(){
 	return new_instructions;
 }
 /*
- * Function: instructios_print
+ *  instructiosPrint
  * -------------------
  *  Show in console the structure tar_instructions
  *
@@ -164,7 +164,7 @@ mytar_instructions* instructions_init(){
  *
  * 	Return: void
  */
-void instructions_print(mytar_instructions instructions){
+void instructionsPrint(mytar_instructions instructions){
 	int i;
 	printf("\n");
 	for (i = 0; i < 10; i++) {

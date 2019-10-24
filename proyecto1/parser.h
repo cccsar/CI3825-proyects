@@ -21,7 +21,7 @@ typedef struct tar_instructions{
 	char file_extraction[MAXLEN];
 } mytar_instructions;
 /*
- * Function: parse
+ * 	parse
  * -------------------
  *  Read the command line and store that values in an organized structure
  *
@@ -32,16 +32,16 @@ typedef struct tar_instructions{
  */
 mytar_instructions* parse(int num_arguments, char const *arguments[]);
 /*
- * Function: instructions_init
+ * 	instructionsInit
  * -------------------
  *  Initialize the structure tar_instructions
  *
  * 	Return: The pointer to the position of the struct mytar_instructions.
  *					If an error exist, the return value is NULL
  */
-mytar_instructions* instructions_init();
+mytar_instructions* instructionsInit();
 /*
- * Function: instructios_print
+ *	instructiosPrint
  * -------------------
  *  Show in console the structure tar_instructions
  *
@@ -49,6 +49,6 @@ mytar_instructions* instructions_init();
  *
  * 	Return: void
  */
-void instructions_print(mytar_instructions instructions);
+void instructionsPrint(mytar_instructions instructions);
 
 #endif
