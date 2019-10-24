@@ -13,9 +13,8 @@
 
 #define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH //this is probably optional ###
 
-#define FNAME_LIMIT 256
-#define FMODE_LIMIT 10
-#define FSIZE_LIMIT 20 
+#define FNAME_LIMIT 256 
+#define FINT_LIMIT 10 + 1 
 
 #define STUFF_TOKEN ''
 
@@ -53,7 +52,7 @@ void writeToDest(int fd_dest, char* text, int size) {
  *
  * After that it calls writeToDest to put the field into the .mytar file
  *
- * fixed length fields are : FNAME_LIMIT, FMODE_LIMIT, FSIZE_LIMIT
+ * fixed length fields are : FNAME_LIMIT, FINT_LIMIT
  *
  *
  * 	fd_dest: file descriptor of the file to write.
@@ -62,7 +61,7 @@ void writeToDest(int fd_dest, char* text, int size) {
  */
 void fillField(int fd_dest,int content_size, int token_field_size) {
 	
-	int k, diff, reminder, to_write_size, preferred_size;
+	int k, diff, to_write_size, preferred_size;
 	
 	/* This is added to adjust the buffer for writting depending on the field being set */
 	char buffer[token_field_size];
@@ -75,9 +74,10 @@ void fillField(int fd_dest,int content_size, int token_field_size) {
 	else
 		to_write_size = diff;
 
-	/* create the padding string and append It to my fd */
+	// create the padding string and append It to my fd /
 	for (k=0; k<to_write_size; ++k)
 		buffer[k] = STUFF_TOKEN;
+	
 
 	writeToDest(fd_dest, buffer, to_write_size);
 }
@@ -99,20 +99,61 @@ void setHeadFields(int fd_dest, struct stat state, char *name, int is_dir) {
 	 * for now, just a test function */
 	int len;
 
+	/*	Anado el nombre del archivo 	*/
+	len = dprintf(fd_dest ,"%s", name); 
+	len = dprintf(fd_dest,"%s","");
+	if (len == -1 ) { 		///  por ahora ###
+	 	perror("dprintf");
+		exit(0);
+		return;
+	} 
+	//else 
+		//fillField(fd_dest, len, FNAME_LIMIT);
 
-	/* append and fill the NAME field of the file */
-	len = dprintf(fd_dest,"%s",name); 
-	fillField(fd_dest, len, FNAME_LIMIT);
 
-	/* append and fill the MODE field of the file */
-	len = dprintf(fd_dest,"%ld",(unsigned long)state.st_mode);	
-	fillField(fd_dest, len, FMODE_LIMIT);
+	/*	Anado el modo del archivo 	*/
+	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_mode);	
+	len = dprintf(fd_dest,"%s","");
+	if (len == -1 ) { 		///  por ahora ###
+	 	perror("dprintf");
+		return;
+	} 
+	//else 
+		//fillField(fd_dest, len, FINT_LIMIT);
+
+	// ###probando
+	/*	Anado el uid del archivo 	*/
+	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_uid);
+	len = dprintf(fd_dest,"%s","");
+	if (len == -1) {
+	 	perror("dprintf");
+		return;
+	} 
+	//else 
+		//fillField(fd_dest, len, FINT_LIMIT);
 	
+	// ###probando
+	/*	Anado el gid del archivo 	*/
+	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_gid);
+	len = dprintf(fd_dest,"%s","");
+	if (len == -1) {
+	 	perror("dprintf");
+		return;
+	} 
+	//else 
+		//fillField(fd_dest, len, FINT_LIMIT);
+
 	if(!is_dir)
        	{
 		/* append and stuff the SIZE of the file */
-		len = dprintf(fd_dest,"%d",(int)state.st_size); 
-		fillField(fd_dest, len, FSIZE_LIMIT); 
+		len = dprintf(fd_dest,"%ld",(unsigned long)state.st_size); 
+		len = dprintf(fd_dest,"%s","");
+		if (len == -1 ) { 		///  por ahora ###
+	 		perror("dprintf");
+			return;
+		} 
+		//else 
+			//fillField(fd_dest, len, FINT_LIMIT); 
 
 	}
 }
@@ -147,6 +188,68 @@ void fileWriter(int fd_source, int fd_dest) {
 }
 
 
+/* handleFileType
+ * --------------
+ *  Esta funcion recibe un 'struct stat' que le permite determinar el tipo 
+ *  de archivo, y asignar campos de cabecera de .mytar en funcion de ello.
+ *
+ *  	fd_dest: File descriptor de archivo .mytar.
+ *  	pathname: nombre del archivo que se esta procesando.
+ *  	current_st: Estado del archivo.
+ *
+ * Retorna NULL, o DIR* en caso de que el archivo procesado sea un directorio.
+ * Esto porque si es un directorio, debo procesar sus campos de cabecera y 
+ * luego recorrerlo recursivamente y para esto necesito devolver un apuntador
+ * al directorio abierto a la funcion que llama.
+ *
+ */
+DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
+
+	DIR *ith_pointer;
+	int current_fd_dest;
+
+	if ( (current_st.st_mode & S_IFMT) == S_IFDIR ) {
+
+		ith_pointer = opendir(pathname); 			//#a#d ### 
+		if ( ith_pointer == NULL ) { 			
+			fprintf(stderr,"No se pudo abrir %s\n", pathname);
+			perror("opendir");
+			return NULL;
+		}
+
+		printf("archiving %s\n",pathname); 
+
+		setHeadFields(fd_dest, current_st, pathname, TRUE);
+		
+		return ith_pointer;
+	}
+	else if ( (current_st.st_mode & S_IFMT) == S_IFREG ) {
+	
+		current_fd_dest = open(pathname, O_RDONLY); 		//#a# ### 
+		if(current_fd_dest == -1)  {
+			fprintf(stderr,"No se pudo abrir %s\n",pathname);
+			perror("open");
+			return NULL;
+		}
+
+		printf("archiving %s\n",pathname); 
+
+		setHeadFields(fd_dest, current_st, pathname, FALSE);
+		fileWriter(current_fd_dest, fd_dest); 
+		close(current_fd_dest);				//#c# ###
+	}
+	else if ( (current_st.st_mode & S_IFMT) == S_IFLNK) {
+
+		printf("DO SOMETHING\n");
+	}
+	else if ( (current_st.st_mode & S_IFMT) == S_IFIFO) { 
+
+		printf("DO SOMETHING\n");
+	}
+
+	return NULL;
+}
+
 
 /* traverseDir
  * ----------
@@ -165,24 +268,22 @@ void fileWriter(int fd_source, int fd_dest) {
  */
 void traverseDir(DIR *dir, char *dirname, int fd) { 
 
-	int current_fd; 
+	int len; 
+	char path[256], pathname[256];
+	DIR *is_dir;
 	struct dirent *current_ent; 
-	DIR *ith_pointer;
-	char path[256], pathname[256], pathname_buff[256];	
+	struct stat current_st; 
 
-	strcpy(path,dirname); 
+	strcpy(path, dirname); 
 
 	while( (current_ent=readdir(dir)) != NULL ) { 
 
 		if( strcmp(current_ent->d_name,".")!=0 && strcmp(current_ent->d_name,"..")!=0) 
 		{
-			int len; 
-			
-			/* Guardo el nombre del path en una variable temporal,
-			 * para preservarlo tras llamadas recursivas */
 			strcpy(pathname, path); 		
+			
 			len = strlen( pathname ); 
-			strcpy(pathname_buff, pathname); 
+			//strcpy(pathname_buff, pathname); 
 
 			if (pathname[len-1] != '/')
 				strcat(pathname,"/"); 
@@ -191,60 +292,17 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 			 * entrada actual */
 			strcat(pathname, current_ent->d_name);	
 
-			struct stat current_file_status; 
 
-			if(stat(pathname, &current_file_status) == -1)
+			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
 			
-			// If the current entry is a directory, set its header 
-			// * fields, then open and call traverseDir recursively /
-			if (current_ent->d_type == DT_DIR )  
-			{ 
-				ith_pointer = opendir(pathname);
-				if ( ith_pointer == NULL ) 			//#a#d
-				{  			
-					fprintf(stderr,"No se pudo abrir %s\n",pathname);
-					perror("opendir");
-				}
-				else {
-
-					printf("archiving %s\n",pathname); 
-
-					// This adds a space at the end of the name part of the field 
-					// * in order to recognize termination /
-					setHeadFields(fd, current_file_status, pathname, TRUE);
-					
-					// This this recursive call changes pathname, 
-					// * therefore we need a buffer to save it temporarily /
-					traverseDir(ith_pointer, pathname, fd);
-
-					closedir(ith_pointer); 				//#c#d
-				}
+			is_dir = handleFileType(fd, pathname, current_st);
+			if (is_dir != NULL) {
+				traverseDir(is_dir, pathname, fd);
+				closedir(is_dir);
 			}
-			
-			// If the current entry is a regular file, set its header 
-			 // fields //
-			else if ( current_ent->d_type == DT_REG) {			//###Leer man de readdir()  
-			
-				current_fd = open(pathname,O_RDONLY); 		//#a#
 
-				if(current_fd == -1)  {
-					fprintf(stderr,"No se pudo abrir %s\n",pathname);
-					perror("open");
-				}
-				else { 
-					printf("archiving %s\n",pathname); 
-
-					setHeadFields(fd, current_file_status, pathname, FALSE);
-
-					fileWriter(current_fd, fd); 
-
-					close(current_fd);				//#c#
-				}
-			}
-			/* Here the before-dir-traverse value of pathname is 
-			 * recovered from buffer */
-			strcpy(pathname, pathname_buff);	
+			//strcpy(pathname, pathname_buff);	 // funciona sin esto
 		}
 	}
 
@@ -270,12 +328,12 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 int main (int argc, char **argv) {  		//File create
 	
 	
-	DIR *dir;
-	struct dirent *entry; 
+	int fd, current_fd, i;
 	char *local_path = (char*) malloc(1000*sizeof(char));
-	int fd, ith_fd,  i; //file descriptor for the file to be created
-	struct stat st;
-	/* comandline goes like  traverseDir name_dest args** */
+	DIR *dir, *current_dir;
+	struct stat current_st;
+
+	/* comandline goes like  traverseDir name_dest arg** */
 	/*First assuming the commandline goes right */
 	 
 
@@ -292,57 +350,23 @@ int main (int argc, char **argv) {  		//File create
 
 	for(i=2; i<argc; i++) { 
 
-		ith_fd = open(argv[i], O_RDONLY);	
-		if (ith_fd == -1) 						//#a#	
-		{
-			fprintf(stderr,"No se pudo abrir %s\n",argv[i]);
-			perror("open"); 
-			continue;
-		}
-
-		if( stat(argv[i], &st) != 0) 					//verifico que el stat se guarde
-		{
+		if( stat(argv[i], &current_st) != 0) { 					//verifico que el stat se guarde
 			perror("stat");
 			continue;
 		}
 		
-		printf("archiving %s\n",argv[i]);
+		//strcat(local_path,"./");
+		strcat(local_path, argv[i]);
 		
-		
-		/* regular file case */ 
-		if( (st.st_mode & S_IFMT) == S_IFREG ) 	
-		{	
-			/* Set propper head for ith file in the */
-			setHeadFields(fd ,st, argv[i], FALSE);
-			fileWriter(ith_fd, fd);
+		current_dir = handleFileType(fd, local_path, current_st) ;
 
-			close(ith_fd);			//#c#f
+		if (current_dir != NULL) {
+			traverseDir(current_dir, argv[i], fd);
+			closedir(current_dir); 					//#c# ###
 		}
-		/* directory case */ 
-		else if( (st.st_mode & S_IFMT) == S_IFDIR)   
-		{
-
-			strcpy(local_path, "./"); 
-			strcat(local_path, argv[i]); 
-
-			dir = opendir(local_path);				//#a#d
-			if (dir == NULL) 		
-			{ 
-				perror("opendir"); 
-				continue;
-			}
-
-			/* set proper head fields for directory */
-			setHeadFields(fd, st, argv[i], TRUE);
-			traverseDir(dir, argv[i], fd);  		//###convendria que ajuste esto para que trabaje con fd
-
-			closedir(dir);						//#c#d
-		}
-			
-
 	}
 
-	close(fd);								//#c#
+	close(fd);								//#c# ###
 		
 	exit(0);	
 }
