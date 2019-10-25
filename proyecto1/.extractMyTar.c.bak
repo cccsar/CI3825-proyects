@@ -11,8 +11,7 @@
 #define FNAME_LIMIT 256 //this is up to 256 char*
 #define FMODE_LIMIT 10  //this is int 
 #define FSIZE_LIMIT 20 	//this is long int
-#define MAX_RW 32
-#define NFIELDS 5
+#define MAX_RW 16
 #define STUFF_TOKEN ''
 
 #define MY_PERM S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH
@@ -30,7 +29,7 @@
  * 	fd_dest: file descriptor of the file to write.
  *
  */
-void fileWriter2(int fd_source, int fd_dest, int total) { 
+void fileWriter(int fd_source, int fd_dest, int total) { 
 		
 	char buffer[MAX_RW], header[MAX_RW];
 	int just_read, to_write, write_count;
@@ -39,7 +38,7 @@ void fileWriter2(int fd_source, int fd_dest, int total) {
 	just_read = 1;
 	write_count = 0; 
 	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0 && write_count <= total){
+	while( (just_read = read(fd_source, buffer, just_read)) != 0 && write_count < total){
 	
 		to_write = 0;
 		while(just_read > to_write) 
@@ -47,6 +46,7 @@ void fileWriter2(int fd_source, int fd_dest, int total) {
 
 		write_count += just_read;
 	}
+
 }
 
 
@@ -124,140 +124,6 @@ char *getField(int fd, int roof, int floor) {
 	return name;
 }
 
-void fileWriter(int fd_source, int fd_dest) { 
-		
-	char buffer[MAX_RW], header[MAX_RW];
-	int just_read, to_write;
-	struct stat st_dest;
-
-	just_read = MAX_RW;
-	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0) {
-	
-		to_write = 0;
-		while(just_read > to_write) 
-			to_write += write(fd_dest, buffer+to_write, just_read - to_write);
-	}
-}
-
-
-char *newGetField(int fd, int field_length) {
-	char *name;
-	int just_read, final_offset;
-	int testing;
-
-	name = (char*) malloc ( field_length) ; //### hacer free de esto
-
-	just_read = read(fd, name, field_length); //no estoy seguro de en donde queda el offset
-	if(just_read == -1) 
-		perror("read");
-	//printf("characters read %d\n",just_read);
-	testing = lseek(fd, 1, SEEK_CUR);
-
-	printf("\tfile offset when getting field %d\n",testing); // #dbg# ###
-
-	//final_offset = lseek(fd, field_length + 1, SEEK_CUR); // no estoy seguro de como queda el offset
-	return name; 
-}
-
-
-int newGetFieldSize(int fd) { 
-	char as;
-	int acum;
-	int testing;
-
-	as = '0';
-	acum = 0;
-
-	while(as != '') {
-		acum += read(fd, &as, 1);
-	}
-	testing = lseek(fd, -(acum), SEEK_CUR); // no estoy seguro de como queda el apuntador
-	acum -=1;
-	printf("\tfield size: %d\n",acum);
-	printf("\tfile offset when getting field size %d\n",testing); // #dbg# ###
-
-
-	//current_field = NewGetField(fd, acum);
-	return acum; 
-}
-
-
-long putField(int fd) {
-	char *this_field;
-	int size;
-	long changed_field;
-
-	size = newGetFieldSize(fd);
-	this_field = newGetField(fd, size);
-	changed_field = atol(this_field);
-
-	return changed_field;
-}
-
-		
-int newFileCreation(int fd) {
-	mode_t mode;
-	uid_t uid;
-	gid_t gid;
-	int new_fd, propper_read;
-	long size, name_size, current_offset;
-	char* name;
-
-	/* Asigno los campos de encabezado necesarios */
-	mode = putField(fd);
-	printf("mode: %ld\n", (long) mode);
-	uid = putField(fd);
-	printf("uid: %ld\n" ,(long)uid);
-	gid = putField(fd);
-	printf("gid: %ld\n" ,(long)gid);
-
-	if ( !((mode & S_IFMT) == S_IFDIR) ) {
-		size = putField(fd);
-		printf("size: %ld\n",size);
-	}
-
-	name_size = putField(fd);	
-	printf("file name size: %ld\n" ,name_size);
-
-	name = (char*) malloc( name_size  );  		// #malloc# ###
-	propper_read = read(fd, name, name_size); 	
-
-	printf("filename: %s\n",name);
-
-	current_offset = lseek(fd, 0, SEEK_CUR);
-
-	/* Creo el tipo de archivo y asigno sus atributos */
-	if( (mode & S_IFMT) == S_IFREG) {
-		new_fd = open(name, CREATION_MODE); 	// #open#  ###
-		if (fd == -1) {
-			fprintf(stderr,"Error creando archivo\n");
-			perror("open"); //tal vez mover el offset a size
-		}
-		else {
-
-			chmod(name, mode); 
-			chown(name, uid, gid);	
-		
-			fileWriter2(fd, new_fd, size);
-			close(new_fd); 				// #close# ###
-		}
-		current_offset += size;
-	}
-	else if( (mode & S_IFMT) == S_IFDIR) {
-		
-	}
-	else if( (mode & S_IFMT) == S_IFLNK) {
-
-	}
-	
-	printf("current offset :%ld \n", current_offset);
-	free(name); 					//#free# ###
-
-	return current_offset;
-}
-
-
 
 
 /* extractMytar
@@ -271,19 +137,15 @@ int newFileCreation(int fd) {
  */
 int main (int argc, char **argv) {  			//extract file
 	
-	int fd_s, ith_roof, ith_floor, turn, i, name_size;
-	int acum, fd_d, n_fields;
-	long stop, file_uid, file_gid, pointer, buffer;
-	char *file_name, *fmode, *fsize, *fname_size, *fuid, *fgid;
-	char as[1];
+	int fd_s, ith_roof, ith_floor, turn;
+	long stop;
+	char *file_name, *fmode, *fsize;
 	mode_t file_mode;
 	off_t file_size;
-	struct stat mytar_state, current_filename;
+	struct stat mytar_state;
 
 	ith_floor = ith_roof = 0;
-	pointer =0 ;
 
-	acum = 0;
 
 	/*ARGV[1] is source file, and contains description for destination files*/
 
@@ -296,13 +158,9 @@ int main (int argc, char **argv) {  			//extract file
 	stop = mytar_state.st_size;
 	fprintf(stdout,".mytar total size: %ld\n",stop); //#dbg
 	
-	while(pointer != stop) {
-		pointer = newFileCreation(fd_s);
-		printf("%ld\n",pointer);
-	}
-	/*
+
 	while( ith_roof != stop ) { 				//### Esto puede traer errores
-		// All of this is possible thanks to offset updating.
+		/* All of this is possible thanks to offset updating.
 		 * To begin with, ith_floor and ith_roof represent, respectively,
 		 * the symbolic beggining of next-to-process field, and the simbolic
 		 * limit of next to process field.
@@ -310,19 +168,19 @@ int main (int argc, char **argv) {  			//extract file
 		 * As a field is parsed, the limits are updated, and when a file is written,
 		 * they need to be coincident, hence the +=FSIZE_LIMIT in the directory case.
 		 *
-		 //
+		 */
 		
-		// init/udpate mytar file offset //
+		/* init/udpate mytar file offset */
 		ith_roof +=  FNAME_LIMIT;
 
-		// get filename //
+		/* get filename */
 		file_name = getField(fd_s, ith_roof, ith_floor) ;
 
-		// 	update mytar file offset //
+		/* 	update mytar file offset */
 		ith_roof += FMODE_LIMIT;
 		ith_floor += FNAME_LIMIT;
 
-		// get mode //	
+		/* get mode */	
 		fmode = getField(fd_s, ith_roof, ith_floor);
 		file_mode = (mode_t) atol(fmode);
 
@@ -330,7 +188,7 @@ int main (int argc, char **argv) {  			//extract file
 		fprintf(stdout,"file mode: %d\n",file_mode);	//#dbg#
 
 
-		// actions depending on the type of file //
+		/* actions depending on the type of file */
 		if ( (file_mode & S_IFMT) == S_IFDIR ) 
 		{
 			struct stat test_state;
@@ -352,11 +210,11 @@ int main (int argc, char **argv) {  			//extract file
 			char *fsize;
 			long file_size;
 
-			// 	update mytar file offset //
+			/* 	update mytar file offset */
 			ith_roof += FSIZE_LIMIT;
 			ith_floor += FMODE_LIMIT;
 
-			// get file size //
+			/* get file size */
 			fsize = getField(fd_s, ith_roof, ith_floor) ;
 			file_size = (unsigned long) atol(fsize);
 
@@ -374,23 +232,22 @@ int main (int argc, char **argv) {  			//extract file
 			
 				fileWriter(fd_s, ith_fd, file_size); 
 
-				// 	update mytar file offset //
+				/* 	update mytar file offset */
 				ith_roof += file_size;
 				ith_floor += file_size+FSIZE_LIMIT;
 
-				// close the ith file descriptor //
+				/* close the ith file descriptor */
 				close(ith_fd);
 			}
 		}
 		printf("\n");
 	}	
-	*/
+
 	/*close source file descriptor */
 	close(fd_s);
 
 
 	return 0; 
 }
-
 
 
