@@ -1,3 +1,14 @@
+/* 
+ * Archivo: create.c 
+ *
+ * descripcion: Archivo fuente con las funciones necesarios para la creacion
+ * de un archivo .mytar
+ *
+ * Autores:
+ *	Carlos Alejandro Sivira Munoz 		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ */
+
 
 #include <stdio.h> 
 #include <stdlib.h>
@@ -11,160 +22,103 @@
 
 #define MAX_RW 16
 
-#define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH //this is probably optional ###
-
-#define FNAME_LIMIT 256 
-#define FINT_LIMIT 10 + 1 
-
+#define CREATE_APPEND_MODE O_WRONLY | O_TRUNC | O_CREAT
+#define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH 
 #define STUFF_TOKEN ''
 
-#define TRUE 1
-#define FALSE 0
-
-
-/* writeToDest
+/*
+* writeToDest
  * ----------
- * Writes a string "text" to the file descriptor represented by fd_dest. Since 
- * we are creating a .mytar, it is assumed that fd_dest is asociated with a
- * file opened in append mode. 
- * 
- * 	fd_dest: An integer representing a file descriptor to the file to write.
- * 	text: String containing what will be written.
- * 	size: Size of the string to write.
+ * Escribe el "string" test al archivo que corresponde con el "file descriptor"
+ * fd_dest.
  *
- */
+ * Dado que se usa para crear archivos .mytar, se asume que el archivo asociado
+ * con el "file descriptor" esta abierto y en modo "APPEND".
+ * 
+ *
+ * 	fd_dest: "file descriptor" del archivo .mytar
+ * 	text: "String" de lo que sera escrito
+ * 	size: Tamano del "string" a escribir
+ *
 void writeToDest(int fd_dest, char* text, int size) {	
 						
 	int read_size ; 
 	
-	/* secure writting */
 	read_size = 0;
 	while(size > read_size)
-		read_size+=write(fd_dest, text+read_size,size-read_size);
+		read_size+=write(fd_dest, text+read_size,size-read_size); 
 }
-
-
-/* fillField
- * ----------
- * This function calculates the remaining space after inserting a variable
- * size field, and padds it with a special character  == '\2' (by writting) until fitting 
- * a predefined fixed length field. 
- *
- * After that it calls writeToDest to put the field into the .mytar file
- *
- * fixed length fields are : FNAME_LIMIT, FINT_LIMIT
- *
- *
- * 	fd_dest: file descriptor of the file to write.
- *	content_size:  Size of the field name to write 
- * 	token_field_size:
- */
-void fillField(int fd_dest,int content_size, int token_field_size) {
-	
-	int k, diff, to_write_size, preferred_size;
-	
-	/* This is added to adjust the buffer for writting depending on the field being set */
-	char buffer[token_field_size];
-
-	/* here i calculate how much to fill to keep constant size fields */
-	diff = token_field_size - content_size;
-
-	if(diff == 0)
-		to_write_size = token_field_size;
-	else
-		to_write_size = diff;
-
-	// create the padding string and append It to my fd /
-	for (k=0; k<to_write_size; ++k)
-		buffer[k] = STUFF_TOKEN;
-	
-
-	writeToDest(fd_dest, buffer, to_write_size);
-}
-
+*/
 
 /* setHeadFields
  * ----------
- * Sets the header fields for files. This fields are name, mode and 
- * only for regular files, the size.
+ * Asigna los campos de cabecera del archivo .mytar utilizando los atributos
+ * de los archivos que se recibieron para empaquetar.
  *
- * 	state: state of the file whose attributes are being added to the archive.
- * 	fd_dest: file descriptor of my archive.
- * 	name: Name of the file being processed.
+ * Estos son:
+ *  	modo # uid # gid [ # size] # name_size # name [# link_pointer] #
  *
+ *
+ * 	fd_dest: "file descriptor" del archivo .mytar
+ * 	state: Estado del archivo actual.
+ * 	name: Nombre del archivo a empaquetar.
  */
-void setHeadFields(int fd_dest, struct stat state, char *name, int is_dir) {
-					//Aun no verifico que lea todo lo que debe leer
-	/* There could be more fields added or removed at will. This is 
-	 * for now, just a test function */
-	int len;
-	int test;	
-	char int_fields[11];
-	int field_size;
+void setHeadFields(int fd_dest, struct stat state, char *name) {
+	int len, test, file_type, field_size;
+	mode_t mode;
+	uid_t uid;
+	gid_t gid;
+	long size;
+	char* pointer;
 
+	mode = state.st_mode;
+	uid = state.st_uid;
+	gid = state.st_gid;
+	size = state.st_size;
+
+	file_type = mode & S_IFMT;
 
 	/*	Anado el modo del archivo 	*/
-	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_mode);	
-	len = dprintf(fd_dest,"%s","");
-	if (len == -1 ) { 		///  por ahora ###
-	 	perror("dprintf");
-		return;
-	} 
-
+	len = dprintf(fd_dest,"%d%c", mode ,STUFF_TOKEN);	
 	
 	/*	Anado el uid del archivo 	*/
-	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_uid);
-	len = dprintf(fd_dest,"%s","");
-	if (len == -1) {
-	 	perror("dprintf");
-		return;
-	} 
+	dprintf(fd_dest,"%d%c", uid, STUFF_TOKEN);
 	
 	/*	Anado el gid del archivo 	*/
-	len = dprintf(fd_dest,"%ld", (unsigned long)state.st_gid);
-	len = dprintf(fd_dest,"%s","");
-	if (len == -1) {
-	 	perror("dprintf");
-		return;
-	} 
+	len = dprintf(fd_dest,"%d%c", gid, STUFF_TOKEN);
 
-	if(!is_dir)
-       	{
-		/* append and stuff the SIZE of the file */
-		len = dprintf(fd_dest,"%ld",(unsigned long)state.st_size); 
-		len = dprintf(fd_dest,"%s","");
-		if (len == -1 ) { 		///  por ahora ###
-	 		perror("dprintf");
-			return;
-		} 
-
+	if( file_type != S_IFDIR )  {
+		/*	Anado el tamano del archivo	 */
+		len = dprintf(fd_dest,"%ld%c", size, STUFF_TOKEN); 
 	}
 
 	/* 	anado el tamano del nombre */
 	field_size = strlen(name);
-	dprintf(fd_dest,"%d", field_size);
-	len = dprintf(fd_dest,"%s","");
+	dprintf(fd_dest,"%d%c", field_size, STUFF_TOKEN);
 
 	/*	Anado el nombre del archivo 	*/
-	len = dprintf(fd_dest ,"%s", name); 
-	len = dprintf(fd_dest,"%s","");
-	if (len == -1 ) { 		///  por ahora ###
-	 	perror("dprintf");
-		exit(0);
-		return;
-	} 
+	len = dprintf(fd_dest ,"%s%c", name, STUFF_TOKEN); 
+
+	if ( file_type  == S_IFLNK) {
+		pointer = (char*) malloc(size + 1); 
+		readlink(name, pointer, size);
+		pointer[size] = '\0';
+
+		/* Anado el path apuntado por el link */
+		dprintf(fd_dest,"%s%c", pointer, STUFF_TOKEN);
+		free(pointer);
+	}
 
 }
 
 
-
 /* fileWriter
  * ----------
- * Writes from a file to another by using its file descriptors.
+ * Escribe de un archivo a otro utilizando sus "file descriptors"
  *
- * 	fd_source: file descriptor of the file to write from.
- * 	fd_dest: file descriptor of the file to write.
  *
+ * 	fd_source: "file descriptor" del archivo del que se lee
+ * 	fd_dest: "file descriptor" del archivo al que se escribe
  */
 void fileWriter(int fd_source, int fd_dest) { 
 		
@@ -178,7 +132,7 @@ void fileWriter(int fd_source, int fd_dest) {
 	
 		to_write = 0;
 		while(just_read > to_write) 
-			to_write += write(fd_dest, buffer+to_write, just_read - to_write);
+			to_write += write(fd_dest,buffer+to_write,just_read-to_write); //###ENCRYPT/DECRYPT
 	}
 
 
@@ -190,6 +144,7 @@ void fileWriter(int fd_source, int fd_dest) {
  * --------------
  *  Esta funcion recibe un 'struct stat' que le permite determinar el tipo 
  *  de archivo, y asignar campos de cabecera de .mytar en funcion de ello.
+ *
  *
  *  	fd_dest: File descriptor de archivo .mytar.
  *  	pathname: nombre del archivo que se esta procesando.
@@ -205,44 +160,46 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 
 	DIR *ith_pointer;
 	int current_fd_dest;
+	struct stat st_for_symlink;
+	char *pointer;
 
+	/* El archivo es un directorio */
 	if ( (current_st.st_mode & S_IFMT) == S_IFDIR ) {
 
-		ith_pointer = opendir(pathname); 			//#a#d ### 
+		ith_pointer = opendir(pathname); 	
 		if ( ith_pointer == NULL ) { 			
 			fprintf(stderr,"No se pudo abrir %s\n", pathname);
 			perror("opendir");
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname); 
+		printf("archiving %s\n",pathname);  	//###VERBOSE
 
-		setHeadFields(fd_dest, current_st, pathname, TRUE);
+		setHeadFields(fd_dest, current_st, pathname);
 		
 		return ith_pointer;
 	}
+	/* El archivo es regular */
 	else if ( (current_st.st_mode & S_IFMT) == S_IFREG ) {
 	
-		current_fd_dest = open(pathname, O_RDONLY); 		//#a# ### 
+		current_fd_dest = open(pathname, O_RDONLY); 	
 		if(current_fd_dest == -1)  {
 			fprintf(stderr,"No se pudo abrir %s\n",pathname);
 			perror("open");
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname); 
+		printf("archiving %s\n",pathname);  //###VERBOSE
 
-		setHeadFields(fd_dest, current_st, pathname, FALSE);
+		setHeadFields(fd_dest, current_st, pathname);
 		fileWriter(current_fd_dest, fd_dest); 
-		close(current_fd_dest);				//#c# ###
+		close(current_fd_dest);			
 	}
+	/* El archivo es un link simbolico */ 		//###IGNORE LINK
 	else if ( (current_st.st_mode & S_IFMT) == S_IFLNK) {
+		printf("archiving %s\n",pathname);  //###VERBOSE
 
-		printf("DO SOMETHING\n");
-	}
-	else if ( (current_st.st_mode & S_IFMT) == S_IFIFO) { 
-
-		printf("DO SOMETHING\n");
+		setHeadFields(fd_dest, current_st, pathname);
 	}
 
 	return NULL;
@@ -251,23 +208,21 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 
 /* traverseDir
  * ----------
- * Used to traverse a directory tree and write file fields into the archive, along with
- * the file content. It does this recursively, in a similar way to a dfs graph traverse.
+ * Esta funcion recorre un arbol de directorios anadiendo campos de cabecera al archivo
+ * .mytar que se esta procesando, junto con el contenido de los archivos procesados.
  *
- * It does this by, first, avoiding "." and ".." directory entries and 
- * from there it goes by each directory entry, processing it fields (name, permissions, 
- * and size only for regfiles), and copying directories and regfile metadata to .mytar
- * as well as regfile content.
+ * Consigue esto procesando los atributos de cada uno de los archivos encontrados
+ * como entrada de directorio, y anadiendolos ar archivo .mytar
  *
- * 	dir: Directory pointer to the dir to traverse.
- * 	dirname: name of the directory to traverse.
- * 	fd: file descriptor of the archive file.
  *
+ * 	dir: apuntador al directorio que se esta recorriendo
+ * 	dirname: nombre del directorio que se esta recorriendo
+ * 	fd: file descriptor del archivo .mytar que se esta creando
  */
 void traverseDir(DIR *dir, char *dirname, int fd) { 
 
 	int len; 
-	char path[256], pathname[256]; //### tamanos
+	char path[3000], pathname[3000]; 
 	DIR *is_dir;
 	struct dirent *current_ent; 
 	struct stat current_st; 
@@ -281,7 +236,6 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 			strcpy(pathname, path); 		
 			
 			len = strlen( pathname ); 
-			//strcpy(pathname_buff, pathname); 
 
 			if (pathname[len-1] != '/')
 				strcat(pathname,"/"); 
@@ -300,7 +254,6 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 				closedir(is_dir);
 			}
 
-			//strcpy(pathname, pathname_buff);	 // funciona sin esto
 		}
 	}
 
@@ -309,36 +262,27 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 
 /* createMyTar
  * --------------
- * Used to create the .mytar file. It beggins setting up the 
- * process creation mask and then it creates the .mytar file.
+ * Se utiliza para crear el archivo .mytar. Funciona procesando cada
+ * archivo recibido en la linea de comandos para obtener atributos que usar
+ * como campos de cabecera para el archivo .mytar.
  *
- * After that it parses every file in the commandline first finding out
- * wether it exists, setting its head field, and then:
- * 	if it is a directory: open it -> traversing it -> on termination it is
- * 		closed
- * 	if it is a regular file: open it -> write it to mytar -> 
- * 		on termination it is closed
- *
- * Requires: 
- * 	access to argv
- *
+ * Procesa cada argumento recibido, primero verificando que exite y luego:
+ * 	Si es un directorio:
+ * 		lo abre, lo recorre (asignando los respectivos campos) y lo cierra.
+ * 	En caso contrario:
+ * 		asigna los campos de cabecera y el contenido del archivo recibido.
+ *	
+ *	files: Archivos a procesar
+ *	n_files: Numero de archivos a procesar
  */
 int main (int argc, char **argv) {  		//File create
 	
-	
 	int fd, current_fd, i;
-	char *local_path = (char*) malloc(1000*sizeof(char));
+	char *local_path = (char*) malloc(3000);
 	DIR *dir, *current_dir;
 	struct stat current_st;
 
-	/* comandline goes like  traverseDir name_dest arg** */
-	/*First assuming the commandline goes right */
-	 
-
-	umask(0000); 				//### Probablemente quiera cambiarla cuando vaya a crear
-						//mejor dejar que open(..O_CREATE) haga el set de los permisos
-						//la umask sera la del usuario
-	fd = open(argv[1], O_WRONLY | O_APPEND | O_TRUNC | O_CREAT, MY_PERM);
+	fd = open(argv[1], CREATE_APPEND_MODE, MY_PERM);
 	if (fd == -1)
 	{
 		perror("open\n"); 
@@ -353,7 +297,6 @@ int main (int argc, char **argv) {  		//File create
 			continue;
 		}
 		
-		//strcat(local_path,"./");
 		strcat(local_path, argv[i]);
 		
 		current_dir = handleFileType(fd, local_path, current_st) ;
@@ -366,9 +309,11 @@ int main (int argc, char **argv) {  		//File create
 		strcpy(local_path, "");
 	}
 
+	
+	free(local_path);
 	close(fd);								//#c# ###
 		
-	exit(0);	
+	return 0;
 }
 
 
