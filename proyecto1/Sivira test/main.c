@@ -2,21 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include "parser.h"
+#include "encryption.h"
 
 int main (int argc, char **argv) {
     /*
     * ENCRYPT
-    char *string = "CARLOS SIVIRA";
+    char *string = "~CARLOS SIVIRA~";
     printf("%s\n", string);
-    string = encrypt(string, 100);
+    string = encrypt(string, 138000);
     printf("%s\n", string);
-    string = encrypt(string, -100);
+    string = encrypt(string, -138000);
     printf("%s\n", string);
-    int i;
-    for (i = -128; i < 128; i++)
-    {
-      printf("(%c -- %d)\n", i, i);
-    }
     */
 
     /*
@@ -29,9 +25,9 @@ int main (int argc, char **argv) {
     * VERBOSE 
     */
 
-   mytar_instructions *inst;
-   inst = parse(argc, argv);
-   verboseMode(*inst, "culopeluo");
+    /*mytar_instructions *inst;
+    inst = parse(argc, argv);
+    verboseMode(*inst, "culopeluo");*/
 
     return(0);
 }

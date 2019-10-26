@@ -8,7 +8,7 @@
 #define __ENCRYPTION__
 #define MAXLEN 1024
 /*
- * Function: encrypt
+ *  encrypt
  * -------------------
  *  Encrypt a string using a specific offset
  *

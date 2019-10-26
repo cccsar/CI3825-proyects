@@ -3,14 +3,17 @@
 
 OPTS=-ansi -g -Wpedantic
 
-mytar: main.o parser.o
-	gcc $(OPTS) -o mytar main.o parser.o
+mytar: main.o parser.o encryption.o
+	gcc $(OPTS) -o mytar main.o parser.o encryption.o
 
-main.o: main.c parser.h
+main.o: main.c parser.h encryption.h
 	gcc $(OPTS) -c main.c
 
-encryption.o: parser.c parser.h
+parser.o: parser.c parser.h
 	gcc $(OPTS) -c parser.c
+
+encryption.o: encryption.c encryption.h
+	gcc $(OPTS) -c encryption.c
 
 clean:
 	rm -f *.o frecpal

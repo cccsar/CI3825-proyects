@@ -30,6 +30,8 @@
         "random": "c",
         "vector": "c",
         "queue": "c",
-        "stack": "c"
+        "stack": "c",
+        "parser.h": "c",
+        "encryption.h": "c"
     }
 }

@@ -91,12 +91,12 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 	}
 	/*Iterate over the arguments of the mytar executable*/
 	for (i = 1; i < num_arguments; i++){
+		int j = 0;
+		/*Store the last character visited*/
+		char last;
 		/*Character array to storing temporal string values*/
 		char *arg = malloc(MAXLEN);
-		int j = 0;
 		strcpy(arg, arguments[i]);
-		/*Saving the last character visited*/
-		char last;
 		/*Look if the character is the beginning of a mytar option*/
 		if (arg[j] == '-' || arg[j] == '-'){
 			j++;
@@ -113,6 +113,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 		} else {
 			char *aux_string = malloc(MAXLEN);
 			char *aux_val = malloc(MAXLEN);
+			int fldes;
 			/*Saving the corresponding argument to its mytar option*/
 			switch (last)
 			{
@@ -126,7 +127,11 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					instructions->encryption_offset = atoi(arg);
 					break;
 				case 'v':
-					instructions->output_verbose = atoi(arg);
+					fldes = open(arg);
+					if (fldes < 0){
+						return NULL;
+					}
+					instructions->output_verbose = fldes;
 					break;
 				case 'f':
 					/*Saving the f arguments*/
@@ -286,11 +291,11 @@ void verboseMode(mytar_instructions instructions, char *filePath){
  * 	Return: void
  */
 void instructionsPrint(mytar_instructions instructions){
+	int i;
 	if (!&instructions){
 		printf("No hay instrucciones");
 	}
 	
-	int i;
 	printf("\n");
 	for (i = 0; i < NUMOPTIONS; i++) {
 		printf("%i\n", instructions.mytar_options[i]);
