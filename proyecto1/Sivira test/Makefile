@@ -1,0 +1,19 @@
+# Autor: Carlos Sivira 15-11377
+# Numero de grupo: 18
+
+OPTS=-ansi -g -Wpedantic
+
+mytar: main.o parser.o encryption.o
+	gcc $(OPTS) -o mytar main.o parser.o encryption.o
+
+main.o: main.c parser.h encryption.h
+	gcc $(OPTS) -c main.c
+
+parser.o: parser.c parser.h
+	gcc $(OPTS) -c parser.c
+
+encryption.o: encryption.c encryption.h
+	gcc $(OPTS) -c encryption.c
+
+clean:
+	rm -f *.o frecpal
