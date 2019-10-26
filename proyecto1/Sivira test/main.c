@@ -7,6 +7,8 @@
 int main (int argc, char **argv) {
     /*
     * ENCRYPT
+    */
+    /*
     char *string = "~CARLOS SIVIRA~";
     printf("%s\n", string);
     string = encrypt(string, 138000);
@@ -17,17 +19,21 @@ int main (int argc, char **argv) {
 
     /*
     * PARSER
+    */
+    /*
     mytar_instructions *inst;
     inst = parse(argc, argv);
-    instructionsPrint(*inst);*/
+    instructionsPrint(*inst);
+    */
 
     /*
     * VERBOSE 
     */
-
-    /*mytar_instructions *inst;
+    
+    mytar_instructions *inst;
     inst = parse(argc, argv);
-    verboseMode(*inst, "culopeluo");*/
-
+    verbose_mode(*inst, "culopeluo");
+    verbose_mode(*inst, "culonopeluo");
+    
     return(0);
 }

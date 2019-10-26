@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "parser.h"
 /*
@@ -127,7 +128,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					instructions->encryption_offset = atoi(arg);
 					break;
 				case 'v':
-					fldes = open(arg);
+					fldes = open(arg, O_RDWR);
 					if (fldes < 0){
 						return NULL;
 					}
@@ -192,7 +193,7 @@ mytar_instructions* instructionsInit(){
 	return new_instructions;
 }
 /*
- *	verboseMode
+ *	verbose_mode
  * -------------------
  *  Add more details about the execution of mytar command and its options
  *
@@ -201,7 +202,7 @@ mytar_instructions* instructionsInit(){
  *
  * 	Return: void
  */
-void verboseMode(mytar_instructions instructions, char *filePath){
+void verbose_mode(mytar_instructions instructions, char *filePath){
 	char *output = malloc(MAXLEN);
 	char *string = malloc(MAXLEN);
 	memset(output, '\0', MAXLEN);
@@ -277,7 +278,6 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 		}
 	}
 	strcat(output, "\n");
-
     write(instructions.output_verbose, output, strlen(output));
 }
 

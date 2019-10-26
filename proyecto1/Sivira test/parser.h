@@ -41,7 +41,7 @@ mytar_instructions* parse(int num_arguments, char **arguments);
  */
 mytar_instructions* instructionsInit();
 /*
- *	verboseMode
+ *	verbose_mode
  * -------------------
  *  Add more details about the execution of mytar command and its options
  *
@@ -50,7 +50,7 @@ mytar_instructions* instructionsInit();
  *
  * 	Return: void
  */
-void verboseMode(mytar_instructions instructions, char *filePath);
+void verbose_mode(mytar_instructions instructions, char *filePath);
 /*
  *	instructionsPrint
  * -------------------
