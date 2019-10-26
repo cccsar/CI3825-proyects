@@ -27,10 +27,10 @@
 int main(int argc, char** argv) {
 	
 	/* CREACION */
-	//createMyTar(argc, argv);
+	createMyTar(argc, argv);
 
 	/* EXTRACCION */
-	extractMyTar(argv);
+	//extractMyTar(argv);
 
 	return 0;
 }
