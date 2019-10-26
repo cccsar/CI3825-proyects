@@ -20,8 +20,8 @@
 #include <unistd.h>
 #include <string.h>
 #include "create.h"
-//#include "encryption.h"
-//#include "parser.h"
+/*#include "encryption.h" */
+/*#include "parser.h" */
 
 #define MAX_RW 16
 
@@ -79,7 +79,7 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
 	gid = state.st_gid;
 	size = state.st_size;
 
-	file_type = mode & S_IFMT;
+	file_type = mode & __S_IFMT;
 
 	/*	Anado el modo del archivo 	*/
 	len = dprintf(fd_dest,"%d%c", mode ,STUFF_TOKEN);	
@@ -90,7 +90,7 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
 	/*	Anado el gid del archivo 	*/
 	len = dprintf(fd_dest,"%d%c", gid, STUFF_TOKEN);
 
-	if( file_type != S_IFDIR )  {
+	if( file_type != __S_IFDIR )  {
 		/*	Anado el tamano del archivo	 */
 		len = dprintf(fd_dest,"%ld%c", size, STUFF_TOKEN); 
 	}
@@ -102,7 +102,7 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
 	/*	Anado el nombre del archivo 	*/
 	len = dprintf(fd_dest ,"%s%c", name, STUFF_TOKEN); 
 
-	if ( file_type  == S_IFLNK) {
+	if ( file_type  == __S_IFLNK) {
 		pointer = (char*) malloc(size + 1); 
 		readlink(name, pointer, size);
 		pointer[size] = '\0';
@@ -135,7 +135,7 @@ void fileWriter(int fd_source, int fd_dest) {
 	
 		to_write = 0;
 		while(just_read > to_write) 
-			to_write += write(fd_dest,buffer+to_write,just_read-to_write); //###ENCRYPT/DECRYPT
+			to_write += write(fd_dest,buffer+to_write,just_read-to_write); /*###ENCRYPT/DECRYPT*/
 	}
 
 
@@ -167,7 +167,7 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 	char *pointer;
 
 	/* El archivo es un directorio */
-	if ( (current_st.st_mode & S_IFMT) == S_IFDIR ) {
+	if ( (current_st.st_mode & __S_IFMT) == __S_IFDIR ) {
 
 		ith_pointer = opendir(pathname); 	
 		if ( ith_pointer == NULL ) { 			
@@ -176,14 +176,14 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname);  	//###VERBOSE
+		printf("archiving %s\n",pathname);  	/*###VERBOSE*/
 
 		setHeadFields(fd_dest, current_st, pathname);
 		
 		return ith_pointer;
 	}
 	/* El archivo es regular */
-	else if ( (current_st.st_mode & S_IFMT) == S_IFREG ) {
+	else if ( (current_st.st_mode & __S_IFMT) == __S_IFREG ) {
 	
 		current_fd_dest = open(pathname, O_RDONLY); 	
 		if(current_fd_dest == -1)  {
@@ -192,15 +192,15 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname);  //###VERBOSE
+		printf("archiving %s\n",pathname);  /*###VERBOSE*/
 
 		setHeadFields(fd_dest, current_st, pathname);
 		fileWriter(current_fd_dest, fd_dest); 
 		close(current_fd_dest);			
 	}
-	/* El archivo es un link simbolico */ 		//###IGNORE LINK
-	else if ( (current_st.st_mode & S_IFMT) == S_IFLNK) {
-		printf("archiving %s\n",pathname);  //###VERBOSE
+	/* El archivo es un link simbolico */ 		/*###IGNORE LINK*/
+	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK) {
+		printf("archiving %s\n",pathname);  /*###VERBOSE*/
 
 		setHeadFields(fd_dest, current_st, pathname);
 	}
@@ -278,7 +278,7 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
  *	files: Archivos a procesar
  *	n_files: Numero de archivos a procesar
  */
-int createMyTar(int n_files, char **files) {  		//File create
+int createMyTar(int n_files, char **files) {  	
 	
 	int fd, current_fd, i;
 	char *local_path = (char*) malloc(3000);
@@ -295,7 +295,7 @@ int createMyTar(int n_files, char **files) {  		//File create
 
 	for(i=2; i<n_files; i++) { 
 
-		if( stat(files[i], &current_st) != 0) { 					//verifico que el stat se guarde
+		if( stat(files[i], &current_st) != 0) { 
 			perror("stat");
 			continue;
 		}
@@ -306,7 +306,7 @@ int createMyTar(int n_files, char **files) {  		//File create
 
 		if (current_dir != NULL) {
 			traverseDir(current_dir, files[i], fd);
-			closedir(current_dir); 					//#c# ###
+			closedir(current_dir); 				
 		}
 
 		strcpy(local_path, "");
@@ -314,7 +314,7 @@ int createMyTar(int n_files, char **files) {  		//File create
 
 	
 	free(local_path);
-	close(fd);								//#c# ###
+	close(fd);								
 		
 	return 0;
 }

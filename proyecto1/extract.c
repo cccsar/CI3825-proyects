@@ -48,7 +48,7 @@ void fileWriterBounded(int fd_source, int fd_dest, int total) {
 
 		to_write = 0;
 		while(just_read > to_write)  {
-			to_write += write(fd_dest, buffer+to_write, just_read - to_write); //###ENCRYPT/DECRYPT
+			to_write += write(fd_dest, buffer+to_write, just_read - to_write); /*###ENCRYPT/DECRYPT*/
 		}
 
 		write_count += just_read;
@@ -77,7 +77,7 @@ char *getField(int fd, int field_length) {
 
 	name = (char*) malloc ( field_length + 1) ; 
 
-	just_read = read(fd, name, field_length); //no estoy seguro de en donde queda el offset
+	just_read = read(fd, name, field_length); 
 	
 	/* se anade terminador de string para no recibir basura adicional */
 	name[field_length] = '\0';
@@ -109,7 +109,7 @@ int getFieldSize(int fd) {
 		acum += read(fd, &as, 1);
 	}
 
-	testing = lseek(fd, -acum, SEEK_CUR); // no estoy seguro de como queda el apuntador
+	testing = lseek(fd, -acum, SEEK_CUR); 
 	acum -=1;
 
 	return acum; 
@@ -189,7 +189,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 	return_v = offset;
 
 	/* El archivo es regular */
-	if( (mode & S_IFMT) == S_IFREG) {
+	if( (mode & __S_IFMT) == __S_IFREG) {
 		return_v +=  size;
 
 		new_fd = open(name, CREATION_MODE); 	
@@ -201,7 +201,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 		else {
 
 			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); //###VERBOSE
+			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); /*###VERBOSE*/
 
 			fileWriterBounded(fd, new_fd, size);
 			lseek(fd, -1, SEEK_CUR);
@@ -210,7 +210,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 		}
 	}
 	/* El archivo es un directorio */
-	else if( (mode & S_IFMT) == S_IFDIR) {
+	else if( (mode & __S_IFMT) == __S_IFDIR) {
 
 		if( stat(name, &test_state) == -1 ) {
 		
@@ -221,14 +221,14 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 			else {
 
 				setModeAndOwn(name, mode & 07777, uid, gid);
-				printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); //###VERBOSE
+				printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); /*###VERBOSE*/
 			}
 		}
 
 
 	}
 	/* El archivo es un link simbolico */
-	else if( (mode & S_IFMT) == S_IFLNK) { //###IGNORE LINK
+	else if( (mode & __S_IFMT) == __S_IFLNK) { /*###IGNORE LINK*/
 
 		new_fd = symlink(link_name, name);
 		if (new_fd == -1) {
@@ -238,7 +238,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 		else {
 
 			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); //###VERBOSE
+			printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); /*###VERBOSE*/
 
 			free(link_name);
 		}
@@ -281,7 +281,7 @@ int gatherFields(int fd) {
 	uid = putField(fd);
 	gid = putField(fd);
 
-	if ( (mode & S_IFMT) != S_IFDIR ) {
+	if ( (mode & __S_IFMT) != __S_IFDIR ) {
 		size = putField(fd);
 	}
 	name_size = putField(fd);	
@@ -291,7 +291,7 @@ int gatherFields(int fd) {
 	name[name_size] = '\0';
 
 	/* Para los links simbolicos, extraigo el apuntador */
-	if( (mode & S_IFMT) == S_IFLNK) {
+	if( (mode & __S_IFMT) == __S_IFLNK) {
 		current_offset = lseek(fd, 1, SEEK_CUR); 
 
 		link_pointer = (char*) malloc(size + 1);
@@ -339,7 +339,7 @@ int extractMyTar(char **mt_name) {
 	pointer =0 ;
 	stop = mytar_state.st_size;
 
-	fprintf(stdout,".mytar total size: %ld\n",stop); //#dbg
+	fprintf(stdout,".mytar total size: %ld\n",stop); /*#dbg*/
 	
 	while(pointer != stop) {
 		pointer = gatherFields(fd_s);
