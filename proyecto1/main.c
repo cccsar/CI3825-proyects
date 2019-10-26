@@ -20,14 +20,14 @@
 #include <string.h>
 #include "create.h"
 #include "extract.h"
-//#include "parser.h"
-//#include "encryption.h"
+/*#include "parser.h"*/
+/*#include "encryption.h"*/
 
 
 int main(int argc, char** argv) {
 	
 	/* CREACION */
-	//createMyTar(argc, argv);
+	/*createMyTar(argc, argv);*/
 
 	/* EXTRACCION */
 	extractMyTar(argv);
