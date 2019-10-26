@@ -97,7 +97,7 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) ;
  * 	
  * Retorna la posicion actual del apuntador. En caso de error retorna 0.
  */
-int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) ;
+int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) ;
 
 
 /* gatherFields

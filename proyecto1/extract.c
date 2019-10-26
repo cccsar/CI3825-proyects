@@ -22,6 +22,7 @@
 
 #define STUFF_TOKEN ''
 #define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
+#define max(X,Y) ((X > Y)? X: Y)
 
 
 /* fileWriterBounded
@@ -151,7 +152,7 @@ long putField(int fd) {
  */
 void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
 	int catcher;
-
+	
 	catcher = chmod(name, mode); 
 	if (catcher == -1)
 		perror("chmod");
@@ -179,30 +180,34 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
  * 	
  * Retorna la posicion actual del apuntador. En caso de error retorna 0.
  */
-int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) {
+int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) {
 	int new_fd;
 	int catcher;
+	int return_v;
 	struct stat test_state;
+
+	return_v = offset;
 
 	/* El archivo es regular */
 	if( (mode & S_IFMT) == S_IFREG) {
+		return_v +=  size;
 
 		new_fd = open(name, CREATION_MODE); 	
 		if (new_fd == -1) {
 			lseek(fd, size , SEEK_CUR);
 			fprintf(stderr,"Error creando archivo %s\n", name); 
 			perror("open");
-			return 0;
 		}
+		else {
 
-		setModeAndOwn(name, mode & 07777, uid, gid);
-		printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); //###VERBOSE
+			setModeAndOwn(name, mode & 07777, uid, gid);
+			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); //###VERBOSE
 
-		fileWriterBounded(fd, new_fd, size);
-		lseek(fd, -1, SEEK_CUR);
+			fileWriterBounded(fd, new_fd, size);
+			lseek(fd, -1, SEEK_CUR);
 
-		close(new_fd); 			
-		offset += size;
+			close(new_fd); 			
+		}
 	}
 	/* El archivo es un directorio */
 	else if( (mode & S_IFMT) == S_IFDIR) {
@@ -212,11 +217,12 @@ int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid
 			if( mkdir(name, mode) == -1) {
 				fprintf(stderr,"Error creando directorio %s\n",name);
 				perror("mkdir");
-				return 0;
 			}
+			else {
 
-			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); //###VERBOSE
+				setModeAndOwn(name, mode & 07777, uid, gid);
+				printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); //###VERBOSE
+			}
 		}
 
 
@@ -228,17 +234,18 @@ int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid
 		if (new_fd == -1) {
 			fprintf(stderr,"Error creando link\n");
 			perror("symlink");
-			return 0;
+		}	
+		else {
+
+			setModeAndOwn(name, mode & 07777, uid, gid);
+			printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); //###VERBOSE
+
+			free(link_name);
 		}
-
-		setModeAndOwn(name, mode & 07777, uid, gid);
-		printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); //###VERBOSE
-
-		free(link_name);
 
 	}
 
-	return offset;
+	return return_v;
 }
 
 
@@ -265,7 +272,7 @@ int gatherFields(int fd) {
 	uid_t uid;
 	gid_t gid;
 	int new_fd, propper_read;
-	long size, name_size, current_offset;
+	long size, name_size, current_offset, previous_offset, local;
 	char* name;
 	char* link_pointer;
 
@@ -295,13 +302,14 @@ int gatherFields(int fd) {
 		link_pointer[size] = '\0';
 	}
 
-	current_offset = lseek(fd, 1, SEEK_CUR); 
+	previous_offset = lseek(fd, 1, SEEK_CUR); 
 
 	/* Creo el tipo de archivo y asigno sus atributos */
-	current_offset = createFile(fd, current_offset, name, mode, size, uid, gid, link_pointer);
+	current_offset = createFile(fd, previous_offset, name, mode, size, uid, gid, link_pointer);
+
 
 	free(name); 					
-	return current_offset;
+	return max(previous_offset, current_offset);
 }
 
 
