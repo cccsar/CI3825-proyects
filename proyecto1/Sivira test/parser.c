@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "parser.h"
 /*
 */
@@ -65,44 +66,6 @@ int set_options(mytar_instructions *instructions, char c){
 	return 0;
 }
 /*
-*/
-int set_arguments(mytar_instructions *inst, char *c, char lo, int counter){
-	char *aux_string = malloc(MAXLEN);
-	char *aux_value = malloc(MAXLEN);
-	/*Saving the corresponding argument to its mytar option*/
-	switch (lo)
-	{
-		case 'o':
-			strcpy(inst->output_directory, (c));
-			break;
-		case 'z':
-			inst->encryption_offset = -atoi(c);
-			break;
-		case 'y':
-			inst->encryption_offset = atoi(c);
-			break;
-		case 'v':
-			inst->output_verbose = atoi(c);
-			break;
-		case 'f':
-			/*Saving the f arguments*/
-			strcpy(aux_string, c);
-			strcpy(aux_value, c);
-			/*Verify if the arg is the first argument .mytar*/
-			if (f_argument(aux_string) == 0){
-				inst->creation_directory[0] = aux_value;
-			} else {
-				inst->creation_directory[counter] = aux_value;
-			}
-			counter++;
-			break;
-		case 's':
-			strcpy(inst->file_extraction, c);
-			break;
-	}
-	return counter;
-}
-/*
  *  parse
  * -------------------
  *  Read the command line and store that values in an organized structure
@@ -132,27 +95,63 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 		char *arg = malloc(MAXLEN);
 		int j = 0;
 		strcpy(arg, arguments[i]);
-		/*Iterate over the characters of arg array*/
-		while(j < strlen(arg)){
-			/*Saving the last character visited*/
-			char last;
-			/*Look if the character is the beginning of a mytar option*/
-			if (arg[j] == '-' || arg[j] == '-'){
-				/*Counter of the while cycle*/
-				j++;
+		/*Saving the last character visited*/
+		char last;
+		/*Look if the character is the beginning of a mytar option*/
+		if (arg[j] == '-' || arg[j] == '-'){
+			j++;
+			/*Iterate over the characters of arg array*/
+			while(j < strlen(arg) && arg[j]){
 				/*Looking for the options that will be used*/
-				while(arg[j]){
-					if (set_options(instructions ,arg[j]) != 0){
-						return NULL;
-					}
-					last = arg[j];
-					j++;
+				if (set_options(instructions ,arg[j]) != 0){
+					return NULL;
 				}
-			/*Looking for arguments for mytar options*/
-			} else {
-				f_count = set_arguments(instructions, arg, last, f_count);
+				last = arg[j];
+				j++;
 			}
+		/*Looking for arguments for mytar options*/
+		} else {
+			char *aux_string = malloc(MAXLEN);
+			char *aux_val = malloc(MAXLEN);
+			/*Saving the corresponding argument to its mytar option*/
+			switch (last)
+			{
+				case 'o':
+					strcpy(instructions->output_directory, (arg));
+					break;
+				case 'z':
+					instructions->encryption_offset = -atoi(arg);
+					break;
+				case 'y':
+					instructions->encryption_offset = atoi(arg);
+					break;
+				case 'v':
+					instructions->output_verbose = atoi(arg);
+					break;
+				case 'f':
+					/*Saving the f arguments*/
+					strcpy(aux_string, arg);
+					strcpy(aux_val, arg);
+					/*Verify if the arg is the first argument .mytar*/
+					if (f_argument(aux_string) == 0){
+						instructions->creation_directory[0] = aux_val;
+					} else {
+						instructions->creation_directory[f_count] = aux_val;
+					}
+					f_count++;
+					break;
+				case 's':
+					strcpy(instructions->file_extraction, arg);
+					break;
+				default:
+					/*Throwing an error for undefined mytar option*/
+					printf("%s undefined mytar option\n");
+					return NULL;
+					break;
+			}
+			free(aux_string);
 		}
+		free(arg);
 	}
 	return instructions;
 }
@@ -182,7 +181,6 @@ mytar_instructions* instructionsInit(){
 	new_instructions->encryption_offset = 0;
 	new_instructions->output_verbose = 1;
 	new_instructions->creation_directory[0] = "file.mytar";
-	strcpy(new_instructions->mytar_file, "");
 	strcpy(new_instructions->output_directory, "");
 	strcpy(new_instructions->file_extraction, "");
 
@@ -198,7 +196,85 @@ mytar_instructions* instructionsInit(){
  *
  * 	Return: void
  */
-void verboseMode(mytar_instructions instructions, char *filePath){}
+void verboseMode(mytar_instructions instructions, char *filePath){
+	char *output = malloc(MAXLEN);
+	char *string = malloc(MAXLEN);
+	memset(output, '\0', MAXLEN);
+	memset(string, '\0', MAXLEN);
+
+	/*Verify if the c mode is on*/
+	if(instructions.mytar_options[0]){
+		strcat(output, "Adding ");
+		strcat(output, filePath);
+		strcat(output, " to ");
+		strcat(output, instructions.creation_directory[0]);
+		/*Verify if the z option is on*/
+		if(instructions.mytar_options[5]){
+			sprintf(string,"%i", instructions.encryption_offset);
+			strcat(output, " encrypting with ");
+			strcat(output, string);
+		}
+		/*Verify if the n option is on*/
+		if(instructions.mytar_options[4]){
+			strcat(output, " ignoring non regular file or directory");
+		}
+	}
+
+	/*Verify if the t mode is on*/
+	if(instructions.mytar_options[1]){
+		strcat(output, "Showing ");
+		strcat(output, filePath);
+		strcat(output, " from ");
+		strcat(output, instructions.creation_directory[0]);
+		/*Verify if the y option is on*/
+		if(instructions.mytar_options[6]){
+			sprintf(string,"%i", instructions.encryption_offset);
+			strcat(output, " decrypting with ");
+			strcat(output, string);
+		}
+		/*Verify if the z option is on*/
+		if(instructions.mytar_options[5]){
+			sprintf(string,"%i", instructions.encryption_offset);
+			strcat(output, " encrypting with ");
+			strcat(output, string);
+		}
+		/*Verify if the n option is on*/
+		if(instructions.mytar_options[4]){
+			strcat(output, " ignoring non regular file or directory");
+		}
+	}
+
+	/*Verify if the x mode is on*/
+	if(instructions.mytar_options[2]){
+		strcat(output, "Extracting ");
+		/*Verify if the s option is on*/
+		if(instructions.mytar_options[9]){
+			strcat(output, "specifically ");
+		}
+		strcat(output, filePath);
+		strcat(output, " from ");
+		strcat(output, instructions.creation_directory[0]);
+		strcat(output, " with:");
+		/*Verify if the y option is on*/
+		if(instructions.mytar_options[6]){
+			sprintf(string,"%i", instructions.encryption_offset);
+			strcat(output, " decrypting with ");
+			strcat(output, string);
+		}
+		/*Verify if the n option is on*/
+		if(instructions.mytar_options[4]){
+			strcat(output, " ignoring non regular file or directory");
+		}
+		/*Verify if the o option is on*/
+		if(instructions.mytar_options[3]){
+			strcat(output, " in ");
+			strcat(output, instructions.output_directory);
+		}
+	}
+	strcat(output, "\n");
+
+    write(instructions.output_verbose, output, strlen(output));
+}
 
 /*
  *  instructiosPrint
@@ -230,7 +306,6 @@ void instructionsPrint(mytar_instructions instructions){
 		i++;
 	}
 	printf("\n");
-	printf("mytar_files--> %s\n",instructions.mytar_file);
 	printf("output_directory--> %s\n",instructions.output_directory);
 	printf("output_verbose--> %i\n",instructions.output_verbose);
 	printf("file_extraction--> %s\n",instructions.file_extraction);

@@ -20,18 +20,18 @@ int main (int argc, char **argv) {
     */
 
     /*
-    * PARSER*/
+    * PARSER
     mytar_instructions *inst;
     inst = parse(argc, argv);
-    instructionsPrint(*inst);
-    /*char *arg[200];
-    char *carlos = malloc(MAXLEN);
-    char *sivira = malloc(MAXLEN);
+    instructionsPrint(*inst);*/
 
-    strcpy(carlos, "Carlos");
-    strcpy(sivira, carlos);
-    arg[0] = carlos;
-    printf("%i -- %i\n", arg[0], &sivira);*/
-    
+    /*
+    * VERBOSE 
+    */
+
+   mytar_instructions *inst;
+   inst = parse(argc, argv);
+   verboseMode(*inst, "culopeluo");
+
     return(0);
 }

@@ -16,7 +16,6 @@ typedef struct tar_instructions{
   int mytar_options[NUMOPTIONS];
 	int encryption_offset;
 	char *creation_directory[MAXLEN];
-	char mytar_file[MAXLEN];
 	char output_directory[MAXLEN];
 	int output_verbose;
 	char file_extraction[MAXLEN];

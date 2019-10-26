@@ -28,6 +28,8 @@
         "locale": "c",
         "memory": "c",
         "random": "c",
-        "vector": "c"
+        "vector": "c",
+        "queue": "c",
+        "stack": "c"
     }
 }
