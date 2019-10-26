@@ -1,4 +1,4 @@
-OPTS=-ansi -Wpedantic
+OPTS = -ansi -Wpedantic
 
 all: freecpal
 
@@ -11,5 +11,5 @@ freecpal: main.o list.o
 	gcc ${OPTS} -I. -c $< 
 
 clean: 
-	@echo "removing object and linked files"
+	@echo ${OPTS} "removing object and linked files"
 	rm -rvf *.o freecpal

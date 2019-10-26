@@ -18,6 +18,7 @@
 #include <string.h> 
 #include <unistd.h>
 #include <string.h>
+#include "extract.h"
 
 #define STUFF_TOKEN ''
 #define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
@@ -181,6 +182,7 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
 int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) {
 	int new_fd;
 	int catcher;
+	struct stat test_state;
 
 	/* El archivo es regular */
 	if( (mode & S_IFMT) == S_IFREG) {
@@ -204,7 +206,6 @@ int createFile(int fd, int offset, char *name, mode_t mode, long size, uid_t uid
 	}
 	/* El archivo es un directorio */
 	else if( (mode & S_IFMT) == S_IFDIR) {
-		struct stat test_state;
 
 		if( stat(name, &test_state) == -1 ) {
 		
@@ -311,18 +312,18 @@ int gatherFields(int fd) {
  *
  * 	mt_name: Nombre del archivo .mytar a procesar	
  */
-int main (int argc, char **argv) {  			
+int extractMyTar(char **mt_name) {  			
 	
 	int fd_s;
 	long stop, pointer;
 	struct stat mytar_state;
 
-	if ( (fd_s = open(argv[1],O_RDONLY)) == -1)   {
+	if ( (fd_s = open(mt_name[1],O_RDONLY)) == -1)   {
 		perror("open");
 		return -1;
 	}
 
-	if ( stat(argv[1], &mytar_state) == -1)  {
+	if ( stat(mt_name[1], &mytar_state) == -1)  {
 		perror("stat");
 		return -1;
 	}

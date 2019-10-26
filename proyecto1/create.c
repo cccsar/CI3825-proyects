@@ -19,6 +19,9 @@
 #include <string.h> 
 #include <unistd.h>
 #include <string.h>
+#include "create.h"
+//#include "encryption.h"
+//#include "parser.h"
 
 #define MAX_RW 16
 
@@ -275,14 +278,14 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
  *	files: Archivos a procesar
  *	n_files: Numero de archivos a procesar
  */
-int main (int argc, char **argv) {  		//File create
+int createMyTar(int n_files, char **files) {  		//File create
 	
 	int fd, current_fd, i;
 	char *local_path = (char*) malloc(3000);
 	DIR *dir, *current_dir;
 	struct stat current_st;
 
-	fd = open(argv[1], CREATE_APPEND_MODE, MY_PERM);
+	fd = open(files[1], CREATE_APPEND_MODE, MY_PERM);
 	if (fd == -1)
 	{
 		perror("open\n"); 
@@ -290,19 +293,19 @@ int main (int argc, char **argv) {  		//File create
 	}
 
 
-	for(i=2; i<argc; i++) { 
+	for(i=2; i<n_files; i++) { 
 
-		if( stat(argv[i], &current_st) != 0) { 					//verifico que el stat se guarde
+		if( stat(files[i], &current_st) != 0) { 					//verifico que el stat se guarde
 			perror("stat");
 			continue;
 		}
 		
-		strcat(local_path, argv[i]);
+		strcat(local_path, files[i]);
 		
 		current_dir = handleFileType(fd, local_path, current_st) ;
 
 		if (current_dir != NULL) {
-			traverseDir(current_dir, argv[i], fd);
+			traverseDir(current_dir, files[i], fd);
 			closedir(current_dir); 					//#c# ###
 		}
 
