@@ -1,16 +1,23 @@
 /*
-* Archivo: parser.c
-* Description: Read the comand line and return the content in a specific format
-* Author: Carlos Sivira 15-11377
-* Group: 18
-*/
+ * Archivo: parser.c
+ *
+ * Descripcion: Recibe una entrada por la linea de comandos y retorna una 
+ * estructura con ls informacion de las opciones activas de mytar y sus 
+ * argumentos.
+ *
+ * Autores:
+ *	Carlos Alejandro Sivira Munoz 		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ * Grupo: 18
+ */
 #ifndef __PARSER__
 #define __PARSER__
 #define MAXLEN 1024
 #define NUMOPTIONS 10
 
 /*
-* Structure to store all mytar options and its arguments
+* Estructura que contiene la informaci[on de las opciones activas y sus 
+* argumentos.
 */
 typedef struct tar_instructions{
   int mytar_options[NUMOPTIONS];
@@ -23,43 +30,34 @@ typedef struct tar_instructions{
 /*
  * 	parse
  * -------------------
- *  Read the command line and store that values in an organized structure
+ *  Recibe la entrada del comando mytar y retorna la estructura de opciones.
  *
- *  num_arguments: Number of arguments to read
- *  arguments: Arguments to store
+ *  num_arguments: numero de argumentos suministrados.
+ *  arguments: Argumentos dados para almacenar en la estructura.
  *
- *  Return: 0 if the execution was correct. Otherwise, return -1
+ *  Retorno: apuntador a la estructura de opciones mytar_instructions.
  */
 mytar_instructions* parse(int num_arguments, char **arguments);
 /*
  * 	instructionsInit
  * -------------------
- *  Initialize the structure tar_instructions
+ *  Inicializa la estructura de opciones mytar_instructions.
  *
- * 	Return: The pointer to the position of the struct mytar_instructions.
- *					If an error exist, the return value is NULL
+ * 	Retorno: apuntador a la estructura de opciones mytar_instructions. Si 
+ * 	existe un error, returna NULL. 
  */
 mytar_instructions* instructionsInit();
 /*
- *	verbose_mode
+ *	verboseMode
  * -------------------
- *  Add more details about the execution of mytar command and its options
+ *  Agrega informacion adicional sobre la ejecucion mytar y sus opciones.
  *
- *	instructions: Struct that contains the commands of mytar executable
- *  filePath: The file path in string format
+ *	instructions: Estructura que contiene la informacion de las opciones de
+ *  			  mytar.
+ *  filePath: La ruta del archivo actual.
  *
- * 	Return: void
+ * 	Retorno: vacio.
  */
-void verbose_mode(mytar_instructions instructions, char *filePath);
-/*
- *	instructionsPrint
- * -------------------
- *  Show in console the structure tar_instructions
- *
- *	instructions: Struct that contains the commands of mytar executable
- *
- * 	Return: void
- */
-void instructionsPrint(mytar_instructions instructions);
+void verboseMode(mytar_instructions instructions, char *filePath);
 
 #endif

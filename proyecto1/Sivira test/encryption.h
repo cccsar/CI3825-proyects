@@ -1,21 +1,25 @@
 /*
-* File: encryption.h
-* Description: Encrypt or decrypt a string
-* Author: Carlos Sivira 15-11377
-* Group: 18
-*/
+ * Archivo: encryption.c
+ *
+ * Descripcion: Encrypta una cadena con un desplazamiento dado.
+ *
+ * Autores:
+ *	Carlos Alejandro Sivira Munoz 		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ * Grupo: 18
+ */
 #ifndef __ENCRYPTION__
 #define __ENCRYPTION__
 #define MAXLEN 1024
 /*
  *  encrypt
  * -------------------
- *  Encrypt a string using a specific offset
+ *  Encripta una cadena dado un desplazamiento.
  *
- *  string: string: Pointer of characters to be encrypted
- *  offset: Offset used for the encryption
+ *  string: Cadena de caracteres a encriptar.
+ *  offset: Desplazamiento de la encriptacion.
  *
- *  Return: The encryted string with the specific offset.
+ *  Retorno: Una cadena de caracteres encriptada por el desplazamiento offset.
  */
 char * encrypt(char *string, int offset);
 

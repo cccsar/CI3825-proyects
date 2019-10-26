@@ -1,9 +1,15 @@
 /*
-* Archivo: parser.c
-* Description: Read the comand line and return the content in a specific format
-* Author: Carlos Sivira 15-11377
-* Group: 18
-*/
+ * Archivo: parser.c
+ *
+ * Descripcion: Recibe una entrada por la linea de comandos y retorna una 
+ * estructura con ls informacion de las opciones activas de mytar y sus 
+ * argumentos.
+ *
+ * Autores:
+ *	Carlos Alejandro Sivira Munoz 		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ * Grupo: 18
+ */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -11,21 +17,39 @@
 #include <unistd.h>
 #include "parser.h"
 /*
-*/
-int f_argument(char *string){
+ * 	fArgument
+ * -------------------
+ *  Recibe una cadena de caracteres y verifica si esta es el nombre del archivo 
+ * .mytar.
+ *
+ *  string: cadena de caracteres a verificar.
+ *
+ *  Retorno: Resultado de la llamada strcmp. -1 en caso de error.
+ */
+int fArgument(char *string){
 	const char c[2] = ".";
 	char *token;
 	token = strtok(string, c);
 	token = strtok(NULL, c);
+	/*No es posible conseguir el token*/
 	if (!token){
 		return -1;
 	}
+	/*Verifica si .mytar esta contenido en la cadena*/
 	return strcmp(token, "mytar");
 }
-
 /*
-*/
-int set_options(mytar_instructions *instructions, char c){
+ * 	setOptions
+ * -------------------
+ *  Guarda las opciones activas de mytar en la estructura mytar_instructions.
+ *
+ *  instructions: estructura de opciones mytar.
+ *  c: caracter actual a ser verificado y/o guardado.
+ *
+ *  Retorno: 0 si la ejecucion fue correcta. -1 en caso de error.
+ */
+int setOptions(mytar_instructions *instructions, char c){
+	/*Verifica si c es uanopcion valida*/
 	switch (c)
 	{
 		case 'c':
@@ -59,7 +83,7 @@ int set_options(mytar_instructions *instructions, char c){
 			instructions->mytar_options[9] = 1;
 			break;
 		default:
-			/*Throwing an error for undefined mytar option*/
+			/*Arroja error por caracter desconocido*/
 			printf("%s undefined mytar option\n");
 			return -1;
 			break;
@@ -67,55 +91,52 @@ int set_options(mytar_instructions *instructions, char c){
 	return 0;
 }
 /*
- *  parse
+ * 	parse
  * -------------------
- *  Read the command line and store that values in an organized structure
+ *  Recibe la entrada del comando mytar y retorna la estructura de opciones.
  *
- *  num_arguments: Number of arguments to read
- *  arguments: Arguments to store
+ *  num_arguments: numero de argumentos suministrados.
+ *  arguments: argumentos dados para almacenar en la estructura.
  *
- * Return:  The pointer to the position of the struct mytar_instructions.
- *			If an error exist, the return value is NULL
+ *  Retorno: apuntador a la estructura de opciones mytar_instructions.
  */
 mytar_instructions* parse(int num_arguments, char **arguments){
 	int i;
-	/*The number of arguments of f option*/
+	/*El numero de argumentos de la opcion f*/
 	int f_count = 1;
-	/*Store the arguments of f option*/
-	char f_string[MAXLEN];
-	/*Initialize the mytar_instructions structure*/
+	/*Se inicializa la estructura de opciones mytar*/
 	mytar_instructions *instructions = instructionsInit();
-	/*Verify if the structure was initialized correctly*/
+	/*Verifica si la inicializacion fue correcta*/
 	if (!instructions){
 		perror("Error: ");
 		return NULL;
 	}
-	/*Iterate over the arguments of the mytar executable*/
+	/*Recorre todos los argumentos dados*/
 	for (i = 1; i < num_arguments; i++){
 		int j = 0;
-		/*Store the last character visited*/
+		/*Salva el ultimo caracter visitado*/
 		char last;
-		/*Character array to storing temporal string values*/
+		/*Cadena que almacena temporalmente los argumentos*/
 		char *arg = malloc(MAXLEN);
 		strcpy(arg, arguments[i]);
-		/*Look if the character is the beginning of a mytar option*/
+		/*Verifica si el argumento actual es una serie opciones*/
 		if (arg[j] == '-' || arg[j] == '-'){
 			j++;
-			/*Iterate over the characters of arg array*/
+			/*Recorre cada caracter de la serie de comandos*/
 			while(j < strlen(arg) && arg[j]){
-				/*Looking for the options that will be used*/
-				if (set_options(instructions ,arg[j]) != 0){
+				/*Verifica si son comando validos*/
+				if (setOptions(instructions ,arg[j]) != 0){
 					return NULL;
 				}
 				last = arg[j];
 				j++;
 			}
-		/*Looking for arguments for mytar options*/
+		/*Salva los argumentos de cada opcion de forma ordenada*/
 		} else {
 			char *aux_string = malloc(MAXLEN);
 			char *aux_val = malloc(MAXLEN);
 			int fldes;
-			/*Saving the corresponding argument to its mytar option*/
+			/*Salva el argumento correspondiente a la ultima opcion visitada*/
 			switch (last)
 			{
 				case 'o':
@@ -128,6 +149,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					instructions->encryption_offset = atoi(arg);
 					break;
 				case 'v':
+					/*Verifica si existe el archivo destino para verboso*/
 					fldes = open(arg, O_RDWR);
 					if (fldes < 0){
 						return NULL;
@@ -135,11 +157,11 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					instructions->output_verbose = fldes;
 					break;
 				case 'f':
-					/*Saving the f arguments*/
+					/*Salva todos los argumentos de f*/
 					strcpy(aux_string, arg);
 					strcpy(aux_val, arg);
-					/*Verify if the arg is the first argument .mytar*/
-					if (f_argument(aux_string) == 0){
+					/*Verifica si el argumentos es el archivo .mytar*/
+					if (fArgument(aux_string) == 0){
 						instructions->creation_directory[0] = aux_val;
 					} else {
 						instructions->creation_directory[f_count] = aux_val;
@@ -150,7 +172,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					strcpy(instructions->file_extraction, arg);
 					break;
 				default:
-					/*Throwing an error for undefined mytar option*/
+					/*Arroja error por caracter desconocido*/
 					printf("%s undefined mytar option\n");
 					return NULL;
 					break;
@@ -162,98 +184,99 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 	return instructions;
 }
 /*
- *  instructionsInit
+ * 	instructionsInit
  * -------------------
- *  Initialize the structure tar_instructions
+ *  Inicializa la estructura de opciones mytar_instructions.
  *
- * 	Return: The pointer to the position of the struct mytar_instructions.
- *			If an error exist, the return value is NULL
+ * 	Retorno: apuntador a la estructura de opciones mytar_instructions. Si 
+ * 	existe un error, returna NULL. 
  */
 mytar_instructions* instructionsInit(){
-	/*Counter of the for cycle*/
 	int i;
-	/*The new mytar_instructions struct*/
+	/*Nueva estructura de opciones mytar*/
 	mytar_instructions *new_instructions = malloc(sizeof(mytar_instructions));
-	/*Verify if the memory allocation was correct*/
+	/*Verifica si la solicitud de memoria fue correcta*/
 	if (!new_instructions){
 		perror("Error: ");
 		return NULL;
 	}
-	/*Initialize the array of options*/
+	/*Inicializa el arreglo de opciones*/
 	for (i = 0; i < NUMOPTIONS; i++) {
 		new_instructions->mytar_options[i] = 0;
 	}
-	/*Setting the default values for all arguments*/
+	/*Inicializa los argumentos de las opciones con sus valores por defecto*/
 	new_instructions->encryption_offset = 0;
 	new_instructions->output_verbose = 1;
 	new_instructions->creation_directory[0] = "file.mytar";
-	strcpy(new_instructions->output_directory, "");
+	strcpy(new_instructions->output_directory, ".");
 	strcpy(new_instructions->file_extraction, "");
 
 	return new_instructions;
 }
 /*
- *	verbose_mode
+ *	verboseMode
  * -------------------
- *  Add more details about the execution of mytar command and its options
+ *  Agrega informacion adicional sobre la ejecucion mytar y sus opciones.
  *
- *	instructions: Struct that contains the commands of mytar executable
- *  filePath: The file path in string format
+ *	instructions: Estructura que contiene la informacion de las opciones de
+ *  			  mytar.
+ *  filePath: La ruta del archivo actual.
  *
- * 	Return: void
+ * 	Retorno: vacio.
  */
-void verbose_mode(mytar_instructions instructions, char *filePath){
+void verboseMode(mytar_instructions instructions, char *filePath){
+	/*Cadenas de caracteres auxiliares*/
 	char *output = malloc(MAXLEN);
 	char *string = malloc(MAXLEN);
 	memset(output, '\0', MAXLEN);
 	memset(string, '\0', MAXLEN);
 
-	/*Verify if the c mode is on*/
+	/*Verifica si el modo c esta activo*/
 	if(instructions.mytar_options[0]){
 		strcat(output, "Adding ");
 		strcat(output, filePath);
 		strcat(output, " to ");
 		strcat(output, instructions.creation_directory[0]);
-		/*Verify if the z option is on*/
+		/*Verifica si la opcion z esta activa*/
 		if(instructions.mytar_options[5]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " encrypting with ");
 			strcat(output, string);
 		}
-		/*Verify if the n option is on*/
+		/*Verifica si la opcion n esta activa*/
 		if(instructions.mytar_options[4]){
 			strcat(output, " ignoring non regular file or directory");
 		}
 	}
 
-	/*Verify if the t mode is on*/
+	/*Verifica si el modo t esta activo*/
 	if(instructions.mytar_options[1]){
 		strcat(output, "Showing ");
 		strcat(output, filePath);
 		strcat(output, " from ");
 		strcat(output, instructions.creation_directory[0]);
-		/*Verify if the y option is on*/
+		/*Verifica si la opcion y esta activa*/
 		if(instructions.mytar_options[6]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " decrypting with ");
 			strcat(output, string);
 		}
-		/*Verify if the z option is on*/
+		/*Verifica si la opcion z esta activa*/
 		if(instructions.mytar_options[5]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " encrypting with ");
 			strcat(output, string);
 		}
-		/*Verify if the n option is on*/
+		/*Verifica si la opcion n esta activa*/
 		if(instructions.mytar_options[4]){
 			strcat(output, " ignoring non regular file or directory");
 		}
 	}
 
-	/*Verify if the x mode is on*/
+	/*Verifica si el modo x esta activo*/
 	if(instructions.mytar_options[2]){
 		strcat(output, "Extracting ");
-		/*Verify if the s option is on*/
+		/*Verifica si la opcion s esta activa*/
 		if(instructions.mytar_options[9]){
 			strcat(output, "specifically ");
 		}
@@ -261,57 +284,23 @@ void verbose_mode(mytar_instructions instructions, char *filePath){
 		strcat(output, " from ");
 		strcat(output, instructions.creation_directory[0]);
 		strcat(output, " with:");
-		/*Verify if the y option is on*/
+		/*Verifica si la opcion y esta activa*/
 		if(instructions.mytar_options[6]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " decrypting with ");
 			strcat(output, string);
 		}
-		/*Verify if the n option is on*/
+		/*Verifica si la opcion n esta activa*/
 		if(instructions.mytar_options[4]){
 			strcat(output, " ignoring non regular file or directory");
 		}
-		/*Verify if the o option is on*/
+		/*Verifica si la opcion o esta activa*/
 		if(instructions.mytar_options[3]){
 			strcat(output, " in ");
 			strcat(output, instructions.output_directory);
 		}
 	}
+	/*Muesta en la salida espeficiada la descripcion*/
 	strcat(output, "\n");
     write(instructions.output_verbose, output, strlen(output));
-}
-
-/*
- *  instructiosPrint
- * -------------------
- *  Show in console the structure tar_instructions
- *
- *	instructions: Struct that contains the commands of mytar executable
- *
- * 	Return: void
- */
-void instructionsPrint(mytar_instructions instructions){
-	int i;
-	if (!&instructions){
-		printf("No hay instrucciones");
-	}
-	
-	printf("\n");
-	for (i = 0; i < NUMOPTIONS; i++) {
-		printf("%i\n", instructions.mytar_options[i]);
-	}
-	printf("\n");
-	printf("encryption_offset--> %i\n",instructions.encryption_offset);
-	printf("\n");
-	i = 0;
-	while (i < MAXLEN){
-		if (instructions.creation_directory[i]) {
-			printf("--> %s\n",instructions.creation_directory[i]);
-		}
-		i++;
-	}
-	printf("\n");
-	printf("output_directory--> %s\n",instructions.output_directory);
-	printf("output_verbose--> %i\n",instructions.output_verbose);
-	printf("file_extraction--> %s\n",instructions.file_extraction);
 }
