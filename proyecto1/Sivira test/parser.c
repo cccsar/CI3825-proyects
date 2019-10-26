@@ -144,9 +144,11 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					break;
 				case 'z':
 					instructions->encryption_offset = -atoi(arg);
+					instructions->is_encripted = 1;
 					break;
 				case 'y':
 					instructions->encryption_offset = atoi(arg);
+					instructions->is_encripted = 0;
 					break;
 				case 'v':
 					/*Verifica si existe el archivo destino para verboso*/
@@ -208,6 +210,7 @@ mytar_instructions* instructionsInit(){
 	new_instructions->encryption_offset = 0;
 	new_instructions->output_verbose = 1;
 	new_instructions->creation_directory[0] = "file.mytar";
+	new_instructions->is_encripted = 0;
 	strcpy(new_instructions->output_directory, ".");
 	strcpy(new_instructions->file_extraction, "");
 
@@ -294,13 +297,43 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 		if(instructions.mytar_options[4]){
 			strcat(output, " ignoring non regular file or directory");
 		}
-		/*Verifica si la opcion o esta activa*/
-		if(instructions.mytar_options[3]){
-			strcat(output, " in ");
-			strcat(output, instructions.output_directory);
-		}
+		
+		strcat(output, " in ");
+		strcat(output, instructions.output_directory);
+		
 	}
 	/*Muesta en la salida espeficiada la descripcion*/
 	strcat(output, "\n");
     write(instructions.output_verbose, output, strlen(output));
+}
+
+/*
+ *	verifyOptions
+ * -------------------
+ *  Verifica si la entrada de opciones es correcta.
+ *
+ *	instructions: Estructura que contiene la informacion de las opciones de
+ *  			  mytar.
+ *
+ * 	Retorno: vacio.
+ */
+int verifyOptions(mytar_instructions instructions){
+	/*Verifica si se intenta encryptar y desencryptar al mismo tiempo*/
+	if (instructions.mytar_options[5] && instructions.mytar_options[6]){
+		return -1;
+	}
+
+	/*Verifica si se intenta crear un .mytar y desencriptar*/
+	if (instructions.mytar_options[0] && instructions.mytar_options[6]){
+		return -1;
+	}
+
+	/*Verifica si se intenta extraer un archivo encriptado sin desencriptarlo*/
+	if (instructions.mytar_options[2] && instructions.is_encripted){
+		if(!instructions.mytar_options[6]){
+			return -1;
+		}
+	}
+
+	return 0;
 }

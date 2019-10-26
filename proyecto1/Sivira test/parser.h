@@ -20,12 +20,13 @@
 * argumentos.
 */
 typedef struct tar_instructions{
-  int mytar_options[NUMOPTIONS];
+  	int mytar_options[NUMOPTIONS];
 	int encryption_offset;
 	char *creation_directory[MAXLEN];
 	char output_directory[MAXLEN];
 	int output_verbose;
 	char file_extraction[MAXLEN];
+	int is_encripted;
 } mytar_instructions;
 /*
  * 	parse
