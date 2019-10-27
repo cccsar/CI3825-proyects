@@ -148,7 +148,6 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					break;
 				case 'y':
 					instructions->encryption_offset = atoi(arg);
-					instructions->is_encripted = 0;
 					break;
 				case 'v':
 					/*Verifica si existe el archivo destino para verboso*/
