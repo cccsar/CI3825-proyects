@@ -137,6 +137,10 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
 	
 		to_write = 0;
 		while(just_read > to_write)
+		/*LA llamada para desencryptar es:*/
+			/* if (inst.mytar_options[y]){
+				resultado = encrypt(string a desencriptar, inst.encryption_offset)
+			}*/
 			to_write += write(fd_dest,buffer+to_write,just_read-to_write); 
 			/*###ENCRYPT/DECRYPT*/
 	}
