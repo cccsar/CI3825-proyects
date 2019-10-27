@@ -127,24 +127,44 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
  */
 void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) { 
 		
-	char buffer[MAX_RW], header[MAX_RW];
-	int just_read, to_write;
+
+	char *temp_buffer = (char*) malloc(1024 * sizeof(char));
+	char buffer[MAX_RW]; 
+	int read_lenght, to_write;
 	struct stat st_dest;
 
-	just_read = MAX_RW;
+	read_lenght = MAX_RW; 
 	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0) {
+	while( (read_lenght = read(fd_source, buffer, read_lenght)) != 0) {
 	
 		to_write = 0;
-		while(just_read > to_write)
+		while(read_lenght > to_write) {
 		/*LA llamada para desencryptar es:*/
 			/* if (inst.mytar_options[y]){
 				resultado = encrypt(string a desencriptar, inst.encryption_offset)
-			}*/
-			to_write += write(fd_dest,buffer+to_write,just_read-to_write); 
+			}
+			
+			Que modifique?, anadi el string temp_buffer para que recibiera la salida
+			de encrypt, y luego lo copie en buffer, pero con el tamano de escritura que
+			ya tengo definido. Luego, al final de la funcion, libere la memoria de lo que recibi
+			en temp_buffer.
+
+			###OJO, no se porque hace falta hacer malloc para temp_buffer, pues en encryption ya
+			me estas pasando un char* que tiene memoria dada por un malloc.. noentiendo muy bien como
+			funciona eso, pero esta encriptando
+				hay que revisar esto ^!!!
+			*/
+			if (inst.mytar_options[5]) {
+				temp_buffer = encrypt(temp_buffer, inst.encryption_offset); 
+				strncpy(buffer,temp_buffer, MAX_RW);
+			}
+
+			to_write += write(fd_dest,buffer+to_write,read_lenght-to_write); 
+		}
 			/*###ENCRYPT/DECRYPT*/
 	}
 
+	free(temp_buffer);
 
 
 }
@@ -309,7 +329,7 @@ int createMyTar(int n_files, char **files, mytar_instructions inst) {
 	}
 
 	for(i=1; i<n_files; i++) { 
-		printf("%S\n", files[i]);
+		printf("%s\n", files[i]);
 		if( stat(files[i], &current_st) != 0) { 
 			perror("stat");
 			continue;
