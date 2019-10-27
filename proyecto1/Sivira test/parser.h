@@ -14,7 +14,16 @@
 #define __PARSER__
 #define MAXLEN 1024
 #define NUMOPTIONS 10
-
+#define C 0
+#define T 1
+#define X 2
+#define O 3
+#define N 4
+#define Z 5
+#define Y 6
+#define V 7
+#define F 8
+#define S 9
 /*
 * Estructura que contiene la informaci[on de las opciones activas y sus 
 * argumentos.
