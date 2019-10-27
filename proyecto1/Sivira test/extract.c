@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "extract.h"
+#include "parser.h"
 
 #define STUFF_TOKEN ''
 #define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
@@ -33,30 +34,37 @@
  *
  * 	fd_source: "file descriptor" del archivo del que se copia.
  * 	fd_dest: "file descriptor" del archivo al que se copia.
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  */
-void fileWriterBounded(int fd_source, int fd_dest, int total) { 
+void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) { 
 		
+	char *temp_buffer = (char*) malloc(1024*sizeof(char));
 	char buffer[1];
-	int just_read, to_write, write_count;
+	int read_length, to_write, write_count;
 	struct stat st_dest;
 
-	just_read = 1;
+	read_length = 1;
 	write_count = 0; 
 	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0 && write_count < total){
+	while( (read_length = read(fd_source, buffer, read_length)) != 0 && write_count < total){
 	
 
 		to_write = 0;
-		while(just_read > to_write)  {
+		while(read_length > to_write)  {
 			/*LA llamada para desencryptar es:*/
 			/* if (inst.mytar_options[y]){
 				resultado = encrypt(string a desencriptar, inst.encryption_offset)
 			}*/
-			to_write += write(fd_dest, buffer+to_write, just_read - to_write); 
+			if (inst.mytar_options[6]) {
+				temp_buffer = encrypt(temp_buffer, inst.encryption_offset); 
+				strncpy(buffer,temp_buffer,read_length);
+			}
+			to_write += write(fd_dest, buffer+to_write, read_length - to_write); 
 			/*###ENCRYPT/DECRYPT*/
 		}
 
-		write_count += just_read;
+		write_count += read_length;
 	}
 }
 
@@ -208,7 +216,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 			setModeAndOwn(name, mode & 07777, uid, gid);
 			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); /*###VERBOSE*/
 
-			fileWriterBounded(fd, new_fd, size);
+			fileWriterBounded(fd, new_fd, size, inst);
 			lseek(fd, -1, SEEK_CUR);
 
 			close(new_fd); 			
@@ -364,3 +372,4 @@ int extractMyTar(char **mt_name, mytar_instructions inst) {
 
 
 
+			

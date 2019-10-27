@@ -21,8 +21,9 @@
  *
  * 	fd_source: "file descriptor" del archivo del que se copia.
  * 	fd_dest: "file descriptor" del archivo al que se copia.
+ * 	inst: Estructura que contiene la informacion de las opciones de mytar
  */
-void fileWriterBounded(int fd_source, int fd_dest, int total) ; 
+void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) ; 
 
 
 /* getField
