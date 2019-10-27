@@ -37,8 +37,8 @@ char* encrypt(char *string, int offset){
 		/*Desplazando todos los caracteres con offset*/
 		while(i < strlen(new_str)){
 			if(new_str[i]){
-				/*El espacio en blanco es saltado*/
-				if (new_str[i] != 32){
+				/*El espacio en blanco y el caracter de separacion son saltados*/
+				if (new_str[i] != 32 && new_str[i] != 2){
 					/*Verifica si el offset es positivo o negativo*/
 					if (c_offset > 0){ 
 						/*Desplaza a la izquierda*/
