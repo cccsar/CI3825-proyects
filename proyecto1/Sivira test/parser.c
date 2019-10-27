@@ -151,8 +151,9 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					break;
 				case 'v':
 					/*Verifica si existe el archivo destino para verboso*/
-					fldes = open(arg, O_RDWR);
+					fldes = open(arg, O_WRONLY | O_TRUNC | O_CREAT);
 					if (fldes < 0){
+						perror("open");
 						return NULL;
 					}
 					instructions->output_verbose = fldes;
@@ -166,8 +167,8 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 						instructions->creation_directory[0] = aux_val;
 					} else {
 						instructions->creation_directory[f_count] = aux_val;
+						f_count++;
 					}
-					f_count++;
 					break;
 				case 's':
 					strcpy(instructions->file_extraction, arg);
@@ -182,6 +183,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 		}
 		free(arg);
 	}
+	instructions->num_args = f_count;
 	return instructions;
 }
 /*
@@ -210,6 +212,7 @@ mytar_instructions* instructionsInit(){
 	new_instructions->output_verbose = 1;
 	new_instructions->creation_directory[0] = "file.mytar";
 	new_instructions->is_encripted = 0;
+	new_instructions->num_args = 0;
 	strcpy(new_instructions->output_directory, ".");
 	strcpy(new_instructions->file_extraction, "");
 
@@ -285,7 +288,8 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 		strcat(output, filePath);
 		strcat(output, " from ");
 		strcat(output, instructions.creation_directory[0]);
-		strcat(output, " with:");
+		strcat(output, " in ");
+		strcat(output, instructions.output_directory);
 		/*Verifica si la opcion y esta activa*/
 		if(instructions.mytar_options[6]){
 			sprintf(string,"%i", instructions.encryption_offset);
@@ -295,13 +299,9 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 		/*Verifica si la opcion n esta activa*/
 		if(instructions.mytar_options[4]){
 			strcat(output, " ignoring non regular file or directory");
-		}
-		
-		strcat(output, " in ");
-		strcat(output, instructions.output_directory);
-		
+		}		
 	}
-	/*Muesta en la salida espeficiada la descripcion*/
+	/*Muesta en la salida espeficada la descripcion*/
 	strcat(output, "\n");
     write(instructions.output_verbose, output, strlen(output));
 }
@@ -314,22 +314,26 @@ void verboseMode(mytar_instructions instructions, char *filePath){
  *	instructions: Estructura que contiene la informacion de las opciones de
  *  			  mytar.
  *
- * 	Retorno: vacio.
+ * 	Retorno: Retorna 0 si las isntrucciones estan corectas. -1 en caso 
+ * 	contrario.
  */
 int verifyOptions(mytar_instructions instructions){
 	/*Verifica si se intenta encryptar y desencryptar al mismo tiempo*/
 	if (instructions.mytar_options[5] && instructions.mytar_options[6]){
+		printf("You can't use -z and -y at the same time\n");
 		return -1;
 	}
 
 	/*Verifica si se intenta crear un .mytar y desencriptar*/
 	if (instructions.mytar_options[0] && instructions.mytar_options[6]){
+		printf("You can't use -c and -y at the same time\n");
 		return -1;
 	}
 
 	/*Verifica si se intenta extraer un archivo encriptado sin desencriptarlo*/
 	if (instructions.mytar_options[2] && instructions.is_encripted){
 		if(!instructions.mytar_options[6]){
+			printf("You can't use -x without -y. The file is encrypted\n");
 			return -1;
 		}
 	}

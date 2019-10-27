@@ -27,6 +27,7 @@ typedef struct tar_instructions{
 	int output_verbose;
 	char file_extraction[MAXLEN];
 	int is_encripted;
+	int num_args;
 } mytar_instructions;
 /*
  * 	parse
