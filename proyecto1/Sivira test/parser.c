@@ -53,34 +53,34 @@ int setOptions(mytar_instructions *instructions, char c){
 	switch (c)
 	{
 		case 'c':
-			instructions->mytar_options[0] = 1;
+			instructions->mytar_options[C] = 1;
 			break;
 		case 't':
-			instructions->mytar_options[1] = 1;
+			instructions->mytar_options[T] = 1;
 			break;
 		case 'x':
-			instructions->mytar_options[2] = 1;
+			instructions->mytar_options[X] = 1;
 			break;
 		case 'o':
-			instructions->mytar_options[3] = 1;
+			instructions->mytar_options[O] = 1;
 			break;
 		case 'n':
-			instructions->mytar_options[4] = 1;
+			instructions->mytar_options[N] = 1;
 			break;
 		case 'z':
-			instructions->mytar_options[5] = 1;
+			instructions->mytar_options[Z] = 1;
 			break;
 		case 'y':
-			instructions->mytar_options[6] = 1;
+			instructions->mytar_options[Y] = 1;
 			break;
 		case 'v':
-			instructions->mytar_options[7] = 1;
+			instructions->mytar_options[V] = 1;
 			break;
 		case 'f':
-			instructions->mytar_options[8] = 1;
+			instructions->mytar_options[F] = 1;
 			break;
 		case 's':
-			instructions->mytar_options[9] = 1;
+			instructions->mytar_options[S] = 1;
 			break;
 		default:
 			/*Arroja error por caracter desconocido*/
@@ -237,52 +237,52 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 	memset(string, '\0', MAXLEN);
 
 	/*Verifica si el modo c esta activo*/
-	if(instructions.mytar_options[0]){
+	if(instructions.mytar_options[C]){
 		strcat(output, "Adding ");
 		strcat(output, filePath);
 		strcat(output, " to ");
 		strcat(output, instructions.creation_directory[0]);
 		/*Verifica si la opcion z esta activa*/
-		if(instructions.mytar_options[5]){
+		if(instructions.mytar_options[Z]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " encrypting with ");
 			strcat(output, string);
 		}
 		/*Verifica si la opcion n esta activa*/
-		if(instructions.mytar_options[4]){
+		if(instructions.mytar_options[N]){
 			strcat(output, " ignoring non regular file or directory");
 		}
 	}
 
 	/*Verifica si el modo t esta activo*/
-	if(instructions.mytar_options[1]){
+	if(instructions.mytar_options[T]){
 		strcat(output, "Showing ");
 		strcat(output, filePath);
 		strcat(output, " from ");
 		strcat(output, instructions.creation_directory[0]);
 		/*Verifica si la opcion y esta activa*/
-		if(instructions.mytar_options[6]){
+		if(instructions.mytar_options[Y]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " decrypting with ");
 			strcat(output, string);
 		}
 		/*Verifica si la opcion z esta activa*/
-		if(instructions.mytar_options[5]){
+		if(instructions.mytar_options[Z]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " encrypting with ");
 			strcat(output, string);
 		}
 		/*Verifica si la opcion n esta activa*/
-		if(instructions.mytar_options[4]){
+		if(instructions.mytar_options[N]){
 			strcat(output, " ignoring non regular file or directory");
 		}
 	}
 
 	/*Verifica si el modo x esta activo*/
-	if(instructions.mytar_options[2]){
+	if(instructions.mytar_options[X]){
 		strcat(output, "Extracting ");
 		/*Verifica si la opcion s esta activa*/
-		if(instructions.mytar_options[9]){
+		if(instructions.mytar_options[S]){
 			strcat(output, "specifically ");
 		}
 		strcat(output, filePath);
@@ -291,13 +291,13 @@ void verboseMode(mytar_instructions instructions, char *filePath){
 		strcat(output, " in ");
 		strcat(output, instructions.output_directory);
 		/*Verifica si la opcion y esta activa*/
-		if(instructions.mytar_options[6]){
+		if(instructions.mytar_options[Y]){
 			sprintf(string,"%i", instructions.encryption_offset);
 			strcat(output, " decrypting with ");
 			strcat(output, string);
 		}
 		/*Verifica si la opcion n esta activa*/
-		if(instructions.mytar_options[4]){
+		if(instructions.mytar_options[N]){
 			strcat(output, " ignoring non regular file or directory");
 		}		
 	}
@@ -319,20 +319,20 @@ void verboseMode(mytar_instructions instructions, char *filePath){
  */
 int verifyOptions(mytar_instructions instructions){
 	/*Verifica si se intenta encryptar y desencryptar al mismo tiempo*/
-	if (instructions.mytar_options[5] && instructions.mytar_options[6]){
+	if (instructions.mytar_options[Z] && instructions.mytar_options[Y]){
 		printf("You can't use -z and -y at the same time\n");
 		return -1;
 	}
 
 	/*Verifica si se intenta crear un .mytar y desencriptar*/
-	if (instructions.mytar_options[0] && instructions.mytar_options[6]){
+	if (instructions.mytar_options[C] && instructions.mytar_options[Y]){
 		printf("You can't use -c and -y at the same time\n");
 		return -1;
 	}
 
 	/*Verifica si se intenta extraer un archivo encriptado sin desencriptarlo*/
-	if (instructions.mytar_options[2] && instructions.is_encripted){
-		if(!instructions.mytar_options[6]){
+	if (instructions.mytar_options[X] && instructions.is_encripted){
+		if(!instructions.mytar_options[Y]){
 			printf("You can't use -x without -y. The file is encrypted\n");
 			return -1;
 		}

@@ -154,7 +154,7 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
 			funciona eso, pero esta encriptando
 				hay que revisar esto ^!!!
 			*/
-			if (inst.mytar_options[5]) {
+			if (inst.mytar_options[Z]) {
 				temp_buffer = encrypt(temp_buffer, inst.encryption_offset); 
 				strncpy(buffer,temp_buffer, MAX_RW);
 			}
@@ -228,12 +228,12 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 	/* El archivo es un link simbolico */ 		
 	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK) {
 		/*Verifica si es necesario ignorar este archivo*/
-		if (!inst.mytar_options[4]){
+		if (!inst.mytar_options[N]){
 			setHeadFields(fd_dest, current_st, pathname);
 		}
 	}
 	/*Verifica si el modo verboso esta activo*/
-	if (inst.mytar_options[7]){
+	if (inst.mytar_options[V]){
 		verboseMode(inst, pathname);
 	}
 

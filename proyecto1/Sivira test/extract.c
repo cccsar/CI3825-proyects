@@ -243,7 +243,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 	/* El archivo es un link simbolico */
 	else if( (mode & __S_IFMT) == __S_IFLNK) { /*###IGNORE LINK*/
 		/*Verifica si es necesario ignorar el archivo*/
-		if (!inst.mytar_options[4]) {
+		if (!inst.mytar_options[N]) {
 			new_fd = symlink(link_name, name);
 			if (new_fd == -1) {
 				fprintf(stderr,"Error creando link\n");
@@ -260,7 +260,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 
 	}
 
-	if (inst.mytar_options[7]){
+	if (inst.mytar_options[V]){
 		verboseMode(inst, name);
 	}
 
