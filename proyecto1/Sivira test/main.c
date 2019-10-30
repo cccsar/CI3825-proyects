@@ -56,7 +56,11 @@ int main(int argc, char** argv) {
         i = extractMyTar(instructions->creation_directory, *instructions);
 
         if (i == -1){
-            printf("The extraction was stoped because execution errors\n");
+            if (instructions->mytar_options[T]){
+                printf("The display was stoped because execution errors\n");
+            } else {
+                printf("The extraction was stoped because execution errors\n");
+            }
             return 0;
         }
     }
