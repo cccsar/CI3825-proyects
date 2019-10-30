@@ -109,7 +109,7 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
 	
 		/* modifica el string a escribir si se va a encriptar*/
 		if (inst.mytar_options[Z]) {
-			temp_buffer = encrypt(buffer, inst.encryption_offset); 
+			temp_buffer = (char*) encrypt(buffer, inst.encryption_offset); 
 			strncpy(buffer,temp_buffer,MAX_RW);
 			free(temp_buffer);
 		}
