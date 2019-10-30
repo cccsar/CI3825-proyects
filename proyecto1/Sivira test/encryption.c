@@ -15,7 +15,7 @@
 
 #define MAXCHARVALUE 127
 #define MINCHARVALUE 32
-#define COFFSET 96 
+#define COFFSET 95 
 
 /*
  *  encrypt
