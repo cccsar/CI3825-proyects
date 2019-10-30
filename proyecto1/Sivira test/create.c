@@ -23,34 +23,6 @@
 #include "encryption.h" 
 #include "parser.h" 
 
-#define MAX_RW 16
-#define CREATE_APPEND_MODE O_WRONLY | O_TRUNC | O_CREAT
-#define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH 
-#define STUFF_TOKEN ''
-
-/*
-* writeToDest
- * ----------
- * Escribe el "string" test al archivo que corresponde con el "file descriptor"
- * fd_dest.
- *
- * Dado que se usa para crear archivos .mytar, se asume que el archivo asociado
- * con el "file descriptor" esta abierto y en modo "APPEND".
- * 
- *
- * 	fd_dest: "file descriptor" del archivo .mytar
- * 	text: "String" de lo que sera escrito
- * 	size: Tamano del "string" a escribir
- *
-void writeToDest(int fd_dest, char* text, int size) {	
-						
-	int read_size ; 
-	
-	read_size = 0;
-	while(size > read_size)
-		read_size+=write(fd_dest, text+read_size,size-read_size); 
-}
-*/
 
 /* setHeadFields
  * ----------
@@ -121,13 +93,13 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
  *
  * 	fd_source: "file descriptor" del archivo del que se lee
  * 	fd_dest: "file descriptor" del archivo al que se escribe
- *  instructions: Estructura que contiene la informacion de las opciones de
- *  			  mytar.
+ *  	instructions: Estructura que contiene la informacion de las opciones
+ *  	de mytar.
  */
 void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) { 
 		
-	char *temp_buffer ;/*= (char*) malloc(1024*sizeof(char));*/
-	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1); /*[MAX_RW]; */
+	char *temp_buffer ;
+	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1); 
 	int read_length, to_write;
 	struct stat st_dest;
 
@@ -135,9 +107,11 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
 	
 	while( (read_length = read(fd_source, buffer, read_length)) != 0) {
 	
+		/* modifica el string a escribir si se va a encriptar*/
 		if (inst.mytar_options[Z]) {
 			temp_buffer = encrypt(buffer, inst.encryption_offset); 
 			strncpy(buffer,temp_buffer,MAX_RW);
+			free(temp_buffer);
 		}
 
 		to_write = 0;
@@ -147,8 +121,6 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
 			/*###ENCRYPT/DECRYPT*/
 	}
 
-	if (inst.mytar_options[Z])
-		free(temp_buffer);
 	free(buffer);
 }
 
@@ -162,8 +134,8 @@ void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) {
  *  	fd_dest: File descriptor de archivo .mytar.
  *  	pathname: nombre del archivo que se esta procesando.
  *  	current_st: Estado del archivo.
- * 		instructions: Estructura que contiene la informacion de las opciones de
- *  			  	  mytar.
+ * 	instructions: Estructura que contiene la informacion de las opciones de
+ *  	 mytar.
  *
  * Retorna NULL, o DIR* en caso de que el archivo procesado sea un directorio.
  * Esto porque si es un directorio, debo procesar sus campos de cabecera y 
@@ -196,6 +168,7 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 		
 		return ith_pointer;
 	}
+
 	/* El archivo es regular */
 	else if ( (current_st.st_mode & __S_IFMT) == __S_IFREG ) {
 	
@@ -214,6 +187,7 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 		fileWriter(current_fd_dest, fd_dest, inst); 
 		close(current_fd_dest);			
 	}
+
 	/* El archivo es un link simbolico */ 		
 	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK ) {
 
@@ -240,13 +214,13 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
  * 	dir: apuntador al directorio que se esta recorriendo
  * 	dirname: nombre del directorio que se esta recorriendo
  * 	fd: file descriptor del archivo .mytar que se esta creando
- *  instructions: Estructura que contiene la informacion de las opciones de
- *  			  mytar.
+ *  	instructions: Estructura que contiene la informacion de las opciones de
+ *  	 mytar.
  */
 void traverseDir(DIR *dir, char *dirname, int fd, mytar_instructions inst) { 
 
 	int len; 
-	char path[3000], pathname[3000]; 
+	char path[MAX_PATHNAME], pathname[MAX_PATHNAME]; 
 	DIR *is_dir;
 	struct dirent *current_ent; 
 	struct stat current_st; 
@@ -298,13 +272,13 @@ void traverseDir(DIR *dir, char *dirname, int fd, mytar_instructions inst) {
  *	
  *	files: Archivos a procesar
  *	n_files: Numero de archivos a procesar
- *  instructions: Estructura que contiene la informacion de las opciones de
- *  			  mytar.
+ *  	instructions: Estructura que contiene la informacion de las opciones de
+ *  		mytar.
  */
 int createMyTar(int n_files, char **files, mytar_instructions inst) {  	
 	
 	int fd, current_fd, i;
-	char *local_path = (char*) malloc(3000);
+	char *local_path = (char*) malloc(MAX_PATHNAME);
 	DIR *dir, *current_dir;
 	struct stat current_st;
 

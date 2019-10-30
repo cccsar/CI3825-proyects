@@ -21,11 +21,6 @@
 #include "extract.h"
 #include "parser.h"
 
-#define STUFF_TOKEN ''
-#define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
-#define max(X,Y) ((X > Y)? X: Y)
-#define MAX_RW 16
-
 
 
 /* fileWriterBounded
@@ -54,6 +49,7 @@ void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions
 		if (inst.mytar_options[Y]) {
 			temp_buffer = encrypt(buffer, inst.encryption_offset); 
 			strncpy(buffer,temp_buffer,read_length);
+			free(temp_buffer); 
 		}
 
 		to_write = 0;
@@ -64,8 +60,6 @@ void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions
 		write_count += read_length;
 	}
 
-	if (total > 0)
-	/*	free(temp_buffer); ###ESTO POTEA TODO*/
 	free(buffer);
 }
 
@@ -119,7 +113,7 @@ int getFieldSize(int fd) {
 	as = '0';
 	acum = 0;
 
-	while(as != '') {
+	while(as != STUFF_TOKEN) {
 		acum += read(fd, &as, 1);
 	}
 
@@ -182,19 +176,14 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
  * Crea un archivo de alguno de los tipos considerados (regulares, directorios,
  * links simbolicos) y actualiza sus atributos.
  *
- *
  * 	fd: "file descriptor" del archivo .mytar
- * 	offset: posicion actual del apuntador en el archivo .mytar
- * 	name: Nombre del archivo que se esta creando
- * 	mode: Modo que se asignara al archivo que se esta creando.
- * 	size: Tamano del archivo que se esta creando
- * 	uid: "User ID" del archivo que se esta creando
- * 	gid: "Group ID" del archivo que se esta creando
- * 	link_name: Nombre del archivo al que apunta un link simbolico (solo para links simbolicos)
- * 	
- * Retorna la posicion actual del apuntador. En caso de error retorna 0.
+ * 	offset: posicion actual sobre el archivo .mytar
+ * 	attr: estructura que contiene los atributos a actualizar
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
+ *
+ * Retorna la posicion actual del apuntador
  */
-/*int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name, mytar_instructions inst) {*/
 int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 	int new_fd;
 	int catcher;
@@ -216,7 +205,7 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 		else {
 
 			setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
-			printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); /*###VERBOSE*/
+/*printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); ###VERBOSE*/
 
 			fileWriterBounded(fd, new_fd, attr.size, inst); 
 			lseek(fd, -1, SEEK_CUR);
@@ -224,26 +213,29 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 			close(new_fd); 			
 		}
 	}
+
 	/* El archivo es un directorio */
 	else if( (attr.mode & __S_IFMT) == __S_IFDIR) {
 
-	/*	if( stat(attr.name, &test_state) == -1 ) {*/
+		
+		if( stat(attr.name, &test_state) == -1 ) {
 		
 			if( mkdir(attr.name, attr.mode) == -1) {
 				fprintf(stderr,"Error creando directorio %s\n",attr.name);
 				perror("mkdir");
 			}
 			else {
-
 				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
-				printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name); /*###VERBOSE*/
+/*printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name); ###VERBOSE*/
 			}
-	/*	}*/
+		}
 
 
 	}
+
 	/* El archivo es un link simbolico */
 	else if( (attr.mode & __S_IFMT) == __S_IFLNK) {
+
 		/*Verifica si es necesario ignorar el archivo*/
 		if (!inst.mytar_options[N]) {
 
@@ -254,15 +246,16 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 			}	
 			else {
 
-				setModeAndOwn(attr.link_ptr, attr.mode & 07777, attr.uid, attr.gid);
-				printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr); /*###VERBOSE*/
-
+				setModeAndOwn(attr.link_ptr, attr.mode & 07777,
+						attr.uid, attr.gid);
+/*printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr); ###VERBOSE */
 				free(attr.link_ptr);
 			}
 		}
 
 	}
 
+	/* Verifica si el modo verboso esta activo */
 	if (inst.mytar_options[V]){
 		verboseMode(inst, attr.name);
 	}
@@ -276,7 +269,7 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
  *  Esta funcion junta los campos de cabecera (tanto numericos como no
  *  numericos) con el objeto de reunir los atributos necesarios para 
  *  crear el archivo empaquetado. Esto ultimo lo hace con una llamada a 
- *  create().
+ *  createFile().
  *
  *  Los campos estan ordenados de la forma:
  *  	modo # uid # gid [ # size] # name_size # name [# link_pointer] #
@@ -286,8 +279,10 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
  *
  *
  *  	fd = "file descriptor" del .mytar
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  *
- *  retorna: el offset actual del archivo, o -1 en caso de error.
+ *  retorna: el offset actual del archivo
  */
 int gatherFields(int fd, mytar_instructions inst) {
 	int new_fd, propper_read;
@@ -299,7 +294,7 @@ int gatherFields(int fd, mytar_instructions inst) {
 	attr.uid = putField(fd);
 	attr.gid = putField(fd);
 
-
+	/* Si no es un directorio, guardo el tamano del archivo */
 	if ( (attr.mode & __S_IFMT) != __S_IFDIR ) {
 		attr.size = putField(fd);
 	}
@@ -325,11 +320,11 @@ int gatherFields(int fd, mytar_instructions inst) {
 	previous_offset = lseek(fd, 1, SEEK_CUR); 
 
 	/* Creo el tipo de archivo y asigno sus atributos */
+
 	current_offset = createFile(fd, previous_offset, attr, inst);
 
-
-	/*free(name); */
 	free(attr.name);
+
 	return max(previous_offset, current_offset);
 }
 
@@ -340,6 +335,8 @@ int gatherFields(int fd, mytar_instructions inst) {
  * Recibe un archivo .mytar y se encarga de extraer su contenido.
  *
  * 	mt_name: Nombre del archivo .mytar a procesar	
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  */
 int extractMyTar(char **mt_name, mytar_instructions inst) {  			
 	
