@@ -24,7 +24,6 @@
 #include "parser.h" 
 
 #define MAX_RW 16
-
 #define CREATE_APPEND_MODE O_WRONLY | O_TRUNC | O_CREAT
 #define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH 
 #define STUFF_TOKEN ''
@@ -127,46 +126,30 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
  */
 void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) { 
 		
-
-	char *temp_buffer = (char*) malloc(1024 * sizeof(char));
-	char buffer[MAX_RW]; 
-	int read_lenght, to_write;
+	char *temp_buffer ;/*= (char*) malloc(1024*sizeof(char));*/
+	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1); /*[MAX_RW]; */
+	int read_length, to_write;
 	struct stat st_dest;
 
-	read_lenght = MAX_RW; 
+	read_length = 1; 
 	
-	while( (read_lenght = read(fd_source, buffer, read_lenght)) != 0) {
+	while( (read_length = read(fd_source, buffer, read_length)) != 0) {
 	
+		if (inst.mytar_options[Z]) {
+			temp_buffer = encrypt(buffer, inst.encryption_offset); 
+			strncpy(buffer,temp_buffer,MAX_RW);
+		}
+
 		to_write = 0;
-		while(read_lenght > to_write) {
-		/*LA llamada para desencryptar es:*/
-			/* if (inst.mytar_options[y]){
-				resultado = encrypt(string a desencriptar, inst.encryption_offset)
-			}
-			
-			Que modifique?, anadi el string temp_buffer para que recibiera la salida
-			de encrypt, y luego lo copie en buffer, pero con el tamano de escritura que
-			ya tengo definido. Luego, al final de la funcion, libere la memoria de lo que recibi
-			en temp_buffer.
-
-			###OJO, no se porque hace falta hacer malloc para temp_buffer, pues en encryption ya
-			me estas pasando un char* que tiene memoria dada por un malloc.. noentiendo muy bien como
-			funciona eso, pero esta encriptando
-				hay que revisar esto ^!!!
-			*/
-			if (inst.mytar_options[Z]) {
-				temp_buffer = encrypt(temp_buffer, inst.encryption_offset); 
-				strncpy(buffer,temp_buffer, MAX_RW);
-			}
-
-			to_write += write(fd_dest,buffer+to_write,read_lenght-to_write); 
+		while(read_length > to_write) {
+			to_write += write(fd_dest,buffer+to_write,read_length-to_write); 
 		}
 			/*###ENCRYPT/DECRYPT*/
 	}
 
-	free(temp_buffer);
-
-
+	if (inst.mytar_options[Z])
+		free(temp_buffer);
+	free(buffer);
 }
 
 
@@ -192,7 +175,6 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 
 	DIR *ith_pointer;
 	int current_fd_dest;
-	struct stat st_for_symlink;
 	char *pointer;
 
 	/* El archivo es un directorio */
@@ -205,6 +187,10 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 			return NULL;
 		}
 
+		/*Verifica si el modo verboso esta activo*/
+		if (inst.mytar_options[V]){
+			verboseMode(inst, pathname);
+		}
 
 		setHeadFields(fd_dest, current_st, pathname);
 		
@@ -220,21 +206,22 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_i
 			return NULL;
 		}
 
+		if (inst.mytar_options[V]){
+			verboseMode(inst, pathname);
+		}
 
 		setHeadFields(fd_dest, current_st, pathname);
 		fileWriter(current_fd_dest, fd_dest, inst); 
 		close(current_fd_dest);			
 	}
 	/* El archivo es un link simbolico */ 		
-	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK) {
+	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK ) {
+
 		/*Verifica si es necesario ignorar este archivo*/
 		if (!inst.mytar_options[N]){
 			setHeadFields(fd_dest, current_st, pathname);
+
 		}
-	}
-	/*Verifica si el modo verboso esta activo*/
-	if (inst.mytar_options[V]){
-		verboseMode(inst, pathname);
 	}
 
 	return NULL;

@@ -13,6 +13,15 @@
 #define __EXTRACT__
 #include "parser.h"
 
+typedef struct {
+	mode_t mode; 
+	uid_t uid; 
+	gid_t gid; 
+	long size;
+	char* name; 
+	char* link_ptr; 
+} f_att; 
+
 /* fileWriterBounded
  * ----------
  * Escribe de un archivo a otro utilizando los "file descriptors" de ambos.
@@ -101,8 +110,7 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) ;
  * 	
  * Retorna la posicion actual del apuntador. En caso de error retorna 0.
  */
-int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name, mytar_instructions inst) ;
-
+int createFile(int fd, long offset, f_att prueba, mytar_instructions inst) ;
 
 /* gatherFields
  * --------------
@@ -138,3 +146,5 @@ int gatherFields(int fd, mytar_instructions inst) ;
 int extractMyTar(char** mt_name, mytar_instructions inst);
 
 #endif
+
+

@@ -3,10 +3,10 @@
 
 OPTS=-ansi -g -Wpedantic
 
-mytar: main.o create.o extract.o parser.o encryption.o
-	gcc $(OPTS) -o mytar main.o create.o extract.o parser.o encryption.o
+mytar: main.o create.o extract.o parser.o encryption.o 
+	gcc $(OPTS) -o mytar main.o create.o extract.o parser.o encryption.o 
 
-main.o: main.c parser.h encryption.h
+main.o: main.c parser.h encryption.h 
 	gcc $(OPTS) -c main.c
 
 create.o: create.c create.h

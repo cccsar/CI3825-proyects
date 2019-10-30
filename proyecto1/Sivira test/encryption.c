@@ -30,7 +30,7 @@
 char* encrypt(char *string, int offset){
   	/*Establecer cadenas auxiliares y de retorno*/
 	char new_str[MAXLEN];
-  	char *return_str = malloc(MAXLEN * sizeof(char)); /* ### Mi modificacion fue aqui, cambie sizeof(MAXLEN) por MAXLEN */
+  	char *return_str = malloc(MAXLEN * sizeof(char)); 
 	int i = 0, c_offset = offset % COFFSET; 
 	strcpy(new_str, string);
 	if (c_offset != 0){

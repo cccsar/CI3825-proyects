@@ -24,6 +24,8 @@
 #define STUFF_TOKEN ''
 #define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
 #define max(X,Y) ((X > Y)? X: Y)
+#define MAX_RW 16
+
 
 
 /* fileWriterBounded
@@ -39,8 +41,8 @@
  */
 void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) { 
 		
-	char *temp_buffer = (char*) malloc(1024*sizeof(char));
-	char buffer[1];
+	char *temp_buffer ;
+	char *buffer = (char*) malloc( MAX_RW * sizeof(char)+1);
 	int read_length, to_write, write_count;
 	struct stat st_dest;
 
@@ -49,23 +51,22 @@ void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions
 	
 	while( (read_length = read(fd_source, buffer, read_length)) != 0 && write_count < total){
 	
+		if (inst.mytar_options[Y]) {
+			temp_buffer = encrypt(buffer, inst.encryption_offset); 
+			strncpy(buffer,temp_buffer,read_length);
+		}
 
 		to_write = 0;
 		while(read_length > to_write)  {
-			/*LA llamada para desencryptar es:*/
-			/* if (inst.mytar_options[y]){
-				resultado = encrypt(string a desencriptar, inst.encryption_offset)
-			}*/
-			if (inst.mytar_options[6]) {
-				temp_buffer = encrypt(temp_buffer, inst.encryption_offset); 
-				strncpy(buffer,temp_buffer,read_length);
-			}
 			to_write += write(fd_dest, buffer+to_write, read_length - to_write); 
-			/*###ENCRYPT/DECRYPT*/
 		}
 
 		write_count += read_length;
 	}
+
+	if (total > 0)
+	/*	free(temp_buffer); ###ESTO POTEA TODO*/
+	free(buffer);
 }
 
 
@@ -193,7 +194,8 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
  * 	
  * Retorna la posicion actual del apuntador. En caso de error retorna 0.
  */
-int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name, mytar_instructions inst) {
+/*int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name, mytar_instructions inst) {*/
+int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 	int new_fd;
 	int catcher;
 	int return_v;
@@ -202,66 +204,67 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 	return_v = offset;
 
 	/* El archivo es regular */
-	if( (mode & __S_IFMT) == __S_IFREG) {
-		return_v +=  size;
+	if( (attr.mode & __S_IFMT) == __S_IFREG) {
+		return_v +=  attr.size;
 
-		new_fd = open(name, CREATION_MODE); 	
+		new_fd = open(attr.name, CREATION_MODE); 	
 		if (new_fd == -1) {
-			lseek(fd, size , SEEK_CUR);
-			fprintf(stderr,"Error creando archivo %s\n", name); 
+			lseek(fd, attr.size , SEEK_CUR);
+			fprintf(stderr,"Error creando archivo %s\n", attr.name); 
 			perror("open");
 		}
 		else {
 
-			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); /*###VERBOSE*/
+			setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
+			printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); /*###VERBOSE*/
 
-			fileWriterBounded(fd, new_fd, size, inst);
+			fileWriterBounded(fd, new_fd, attr.size, inst); 
 			lseek(fd, -1, SEEK_CUR);
 
 			close(new_fd); 			
 		}
 	}
 	/* El archivo es un directorio */
-	else if( (mode & __S_IFMT) == __S_IFDIR) {
+	else if( (attr.mode & __S_IFMT) == __S_IFDIR) {
 
-		if( stat(name, &test_state) == -1 ) {
+	/*	if( stat(attr.name, &test_state) == -1 ) {*/
 		
-			if( mkdir(name, mode) == -1) {
-				fprintf(stderr,"Error creando directorio %s\n",name);
+			if( mkdir(attr.name, attr.mode) == -1) {
+				fprintf(stderr,"Error creando directorio %s\n",attr.name);
 				perror("mkdir");
 			}
 			else {
 
-				setModeAndOwn(name, mode & 07777, uid, gid);
-				printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); /*###VERBOSE*/
+				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
+				printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name); /*###VERBOSE*/
 			}
-		}
+	/*	}*/
 
 
 	}
 	/* El archivo es un link simbolico */
-	else if( (mode & __S_IFMT) == __S_IFLNK) { /*###IGNORE LINK*/
+	else if( (attr.mode & __S_IFMT) == __S_IFLNK) {
 		/*Verifica si es necesario ignorar el archivo*/
 		if (!inst.mytar_options[N]) {
-			new_fd = symlink(link_name, name);
+
+			new_fd = symlink(attr.link_ptr, attr.name);
 			if (new_fd == -1) {
 				fprintf(stderr,"Error creando link\n");
 				perror("symlink");
 			}	
 			else {
 
-				setModeAndOwn(name, mode & 07777, uid, gid);
-				printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); /*###VERBOSE*/
+				setModeAndOwn(attr.link_ptr, attr.mode & 07777, attr.uid, attr.gid);
+				printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr); /*###VERBOSE*/
 
-				free(link_name);
+				free(attr.link_ptr);
 			}
 		}
 
 	}
 
 	if (inst.mytar_options[V]){
-		verboseMode(inst, name);
+		verboseMode(inst, attr.name);
 	}
 
 	return return_v;
@@ -287,47 +290,46 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
  *  retorna: el offset actual del archivo, o -1 en caso de error.
  */
 int gatherFields(int fd, mytar_instructions inst) {
-	mode_t mode;
-	uid_t uid;
-	gid_t gid;
 	int new_fd, propper_read;
-	long size, name_size, current_offset, previous_offset, local;
-	char* name;
-	char* link_pointer;
+	long name_size, current_offset, previous_offset;
+	f_att attr;
 
 	
-	mode = putField(fd);
-	uid = putField(fd);
-	gid = putField(fd);
+	attr.mode = putField(fd);
+	attr.uid = putField(fd);
+	attr.gid = putField(fd);
 
-	if ( (mode & __S_IFMT) != __S_IFDIR ) {
-		size = putField(fd);
+
+	if ( (attr.mode & __S_IFMT) != __S_IFDIR ) {
+		attr.size = putField(fd);
 	}
 	name_size = putField(fd);	
 
-	name = (char*) malloc(name_size + 1);  		
-	propper_read = read(fd, name, name_size ); 	
-	name[name_size] = '\0';
+	attr.name = (char*) malloc(name_size + 1);  		
+	propper_read = read(fd, attr.name, name_size ); 	
+	attr.name[name_size] = '\0';
 
 	/* Para los links simbolicos, extraigo el apuntador */
-	if( (mode & __S_IFMT) == __S_IFLNK) {
+	if( (attr.mode & __S_IFMT) == __S_IFLNK) {
 		current_offset = lseek(fd, 1, SEEK_CUR); 
 
-		link_pointer = (char*) malloc(size + 1);
-		propper_read = read(fd, link_pointer, size);
+		attr.link_ptr = (char*) malloc(attr.size + 1);
+		propper_read = read(fd, attr.link_ptr, attr.size);
 
 		if (propper_read == -1)
 			perror("read");
-		link_pointer[size] = '\0';
+		attr.link_ptr[attr.size] = '\0';
+
 	}
 
 	previous_offset = lseek(fd, 1, SEEK_CUR); 
 
 	/* Creo el tipo de archivo y asigno sus atributos */
-	current_offset = createFile(fd, previous_offset, name, mode, size, uid, gid, link_pointer, inst);
+	current_offset = createFile(fd, previous_offset, attr, inst);
 
 
-	free(name); 					
+	/*free(name); */
+	free(attr.name);
 	return max(previous_offset, current_offset);
 }
 
