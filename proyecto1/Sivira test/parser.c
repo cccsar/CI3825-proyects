@@ -84,7 +84,7 @@ int setOptions(mytar_instructions *instructions, char c){
 			break;
 		default:
 			/*Arroja error por caracter desconocido*/
-			printf("%s undefined mytar option\n");
+			printf("Undefined mytar option %c\n", c);
 			return -1;
 			break;
 	}
@@ -175,7 +175,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
 					break;
 				default:
 					/*Arroja error por caracter desconocido*/
-					printf("%s undefined mytar option\n");
+					printf("Undefined mytar option %c\n", last);
 					return NULL;
 					break;
 			}
