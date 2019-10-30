@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 	if (instructions->mytar_options[C]){
         createMyTar(instructions->num_args, instructions->creation_directory, *instructions);
     }
-    /* EXTRACCION CON X*/
+    /* EXTRACCION CON X Y MUESTRA CON T*/
     if (instructions->mytar_options[X] || instructions->mytar_options[T]){
         extractMyTar(instructions->creation_directory, *instructions);
     }

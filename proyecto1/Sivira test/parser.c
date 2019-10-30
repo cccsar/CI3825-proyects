@@ -330,12 +330,48 @@ int verifyOptions(mytar_instructions instructions){
 		return -1;
 	}
 
+	/*Verifica si se intenta extraer un .mytar y encriptar*/
+	if (instructions.mytar_options[X] && instructions.mytar_options[Z]){
+		printf("You can't use -x and -z at the same time\n");
+		return -1;
+	}
+
+	/*Verifica si se intenta mostrar un .mytar sin argumento f*/
+	if (instructions.mytar_options[T] && !instructions.mytar_options[F]){
+		printf("You can't use -t without -f argument\n");
+		return -1;
+	}
+
+	/*Verifica si se intenta estraer un .mytar sin argumento f*/
+	if (instructions.mytar_options[X] && !instructions.mytar_options[F]){
+		printf("You can't use -x without -f argument\n");
+		return -1;
+	}
+
 	/*Verifica si se intenta extraer un archivo encriptado sin desencriptarlo*/
 	if (instructions.mytar_options[X] && instructions.is_encripted){
 		if(!instructions.mytar_options[Y]){
 			printf("You can't use -x without -y. The file is encrypted\n");
 			return -1;
 		}
+	}
+
+	/*Verifica si se intenta crear y mostrar al mismo tiempo*/
+	if (instructions.mytar_options[X] && instructions.mytar_options[T]){
+		printf("You can't use -c and -t at the same time\n");
+		return -1;
+	}
+
+	/*Verifica si se intenta crear y extraer al mismo tiempo*/
+	if (instructions.mytar_options[C] && instructions.mytar_options[X]){
+		printf("You can't use -c and -x at the same time\n");
+		return -1;
+	}
+
+	/*Verifica si se intenta extraer y mostrar al mismo tiempo*/
+	if (instructions.mytar_options[X] && instructions.mytar_options[T]){
+		printf("You can't use -x and -t at the same time\n");
+		return -1;
 	}
 
 	return 0;
