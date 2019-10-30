@@ -2,7 +2,7 @@
  * Archivo: parser.c
  *
  * Descripcion: Recibe una entrada por la linea de comandos y retorna una 
- * estructura con ls informacion de las opciones activas de mytar y sus 
+ * estructura con la informacion de las opciones activas de mytar y sus 
  * argumentos.
  *
  * Autores:
@@ -22,7 +22,7 @@
  *  Recibe una cadena de caracteres y verifica si esta es el nombre del archivo 
  * .mytar.
  *
- *  string: cadena de caracteres a verificar.
+ *  string: Cadena de caracteres a verificar.
  *
  *  Retorno: Resultado de la llamada strcmp. -1 en caso de error.
  */
@@ -43,13 +43,13 @@ int fArgument(char *string){
  * -------------------
  *  Guarda las opciones activas de mytar en la estructura mytar_instructions.
  *
- *  instructions: estructura de opciones mytar.
- *  c: caracter actual a ser verificado y/o guardado.
+ *  instructions: Estructura de opciones mytar.
+ *  c: Caracter actual a ser verificado y/o guardado.
  *
  *  Retorno: 0 si la ejecucion fue correcta. -1 en caso de error.
  */
 int setOptions(mytar_instructions *instructions, char c){
-	/*Verifica si c es uanopcion valida*/
+	/*Verifica si c es una opcion valida*/
 	switch (c)
 	{
 		case 'c':
@@ -95,10 +95,10 @@ int setOptions(mytar_instructions *instructions, char c){
  * -------------------
  *  Recibe la entrada del comando mytar y retorna la estructura de opciones.
  *
- *  num_arguments: numero de argumentos suministrados.
- *  arguments: argumentos dados para almacenar en la estructura.
+ *  num_arguments: Numero de argumentos suministrados.
+ *  arguments: Argumentos dados para almacenar en la estructura.
  *
- *  Retorno: apuntador a la estructura de opciones mytar_instructions.
+ *  Retorno: Apuntador a la estructura de opciones mytar_instructions.
  */
 mytar_instructions* parse(int num_arguments, char **arguments){
 	int i;
@@ -191,7 +191,7 @@ mytar_instructions* parse(int num_arguments, char **arguments){
  * -------------------
  *  Inicializa la estructura de opciones mytar_instructions.
  *
- * 	Retorno: apuntador a la estructura de opciones mytar_instructions. Si 
+ * 	Retorno: Apuntador a la estructura de opciones mytar_instructions. Si 
  * 	existe un error, returna NULL. 
  */
 mytar_instructions* instructionsInit(){
@@ -227,7 +227,7 @@ mytar_instructions* instructionsInit(){
  *  			  mytar.
  *  filePath: La ruta del archivo actual.
  *
- * 	Retorno: vacio.
+ * 	Retorno: Vacio.
  */
 void verboseMode(mytar_instructions instructions, char *filePath){
 	/*Cadenas de caracteres auxiliares*/
@@ -318,7 +318,7 @@ void verboseMode(mytar_instructions instructions, char *filePath){
  * 	contrario.
  */
 int verifyOptions(mytar_instructions instructions){
-	/*Verifica si se intenta encryptar y desencryptar al mismo tiempo*/
+	/*Verifica si se intenta encriptar y desencriptar al mismo tiempo*/
 	if (instructions.mytar_options[Z] && instructions.mytar_options[Y]){
 		printf("You can't use -z and -y at the same time\n");
 		return -1;
@@ -342,7 +342,7 @@ int verifyOptions(mytar_instructions instructions){
 		return -1;
 	}
 
-	/*Verifica si se intenta estraer un .mytar sin argumento f*/
+	/*Verifica si se intenta extraer un .mytar sin argumento f*/
 	if (instructions.mytar_options[X] && !instructions.mytar_options[F]){
 		printf("You can't use -x without -f argument\n");
 		return -1;
@@ -356,19 +356,19 @@ int verifyOptions(mytar_instructions instructions){
 		}
 	}
 
-	/*Verifica si se intenta crear y mostrar al mismo tiempo*/
+	/*Verifica si se intenta crear y mostrar al mismo tiempo un .mytar*/
 	if (instructions.mytar_options[X] && instructions.mytar_options[T]){
 		printf("You can't use -c and -t at the same time\n");
 		return -1;
 	}
 
-	/*Verifica si se intenta crear y extraer al mismo tiempo*/
+	/*Verifica si se intenta crear y extraer al mismo tiempo un .mytar*/
 	if (instructions.mytar_options[C] && instructions.mytar_options[X]){
 		printf("You can't use -c and -x at the same time\n");
 		return -1;
 	}
 
-	/*Verifica si se intenta extraer y mostrar al mismo tiempo*/
+	/*Verifica si se intenta extraer y mostrar al mismo tiempo un .mytar*/
 	if (instructions.mytar_options[X] && instructions.mytar_options[T]){
 		printf("You can't use -x and -t at the same time\n");
 		return -1;

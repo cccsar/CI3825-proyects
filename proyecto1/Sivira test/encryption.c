@@ -1,7 +1,7 @@
 /*
  * Archivo: encryption.c
  *
- * Descripcion: Encrypta una cadena con un desplazamiento dado
+ * Descripcion: Encripta una cadena con un desplazamiento dado
  *
  * Autores:
  *	Carlos Alejandro Sivira Munoz 		15-11377
@@ -37,7 +37,7 @@ char* encrypt(char *string, int offset){
 		/*Desplazando todos los caracteres con offset*/
 		while(i < strlen(new_str)){
 			if(new_str[i]){
-				/*El espacio en blanco y el caracter de separacion son saltados*/
+				/*Son omitidos los caracteres en el rango [0,32]*/
 				if (new_str[i] > 32){
 					/*Verifica si el offset es positivo o negativo*/
 					if (c_offset > 0){ 
