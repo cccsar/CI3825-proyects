@@ -14,8 +14,8 @@
 #include "encryption.h"
 
 #define MAXCHARVALUE 127
-#define MINCHARVALUE 32
-#define COFFSET 96
+#define MINCHARVALUE 0
+#define COFFSET MAXCHARVALUE - MINCHARVALUE + 1 
 
 /*
  *  encrypt
