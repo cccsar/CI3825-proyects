@@ -25,11 +25,11 @@ int main(int argc, char** argv) {
     }
 
 	/* CREACION */
-	if (instructions->mytar_options[0]){
+	if (instructions->mytar_options[C]){
         createMyTar(instructions->num_args, instructions->creation_directory, *instructions);
     }
-    /* EXTRACCION */
-    if (instructions->mytar_options[2]){
+    /* EXTRACCION CON X*/
+    if (instructions->mytar_options[X] || instructions->mytar_options[T]){
         extractMyTar(instructions->creation_directory, *instructions);
     }
 

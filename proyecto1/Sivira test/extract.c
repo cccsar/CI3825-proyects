@@ -205,11 +205,13 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 		}
 		else {
 
-			setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
-/*printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); ###VERBOSE*/
-
-			fileWriterBounded(fd, new_fd, attr.size, inst); 
-			lseek(fd, -1, SEEK_CUR);
+			if (inst.mytar_options[T]){
+				printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); 
+			} else {
+				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
+				fileWriterBounded(fd, new_fd, attr.size, inst); 
+				lseek(fd, -1, SEEK_CUR);
+			}
 
 			close(new_fd); 			
 		}
@@ -227,7 +229,9 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 			}
 			else {
 				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
-/*printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name); ###VERBOSE*/
+				if (inst.mytar_options[T]){
+					printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name);
+				}
 			}
 		}
 
@@ -249,7 +253,9 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 
 				setModeAndOwn(attr.link_ptr, attr.mode & 07777,
 						attr.uid, attr.gid);
-/*printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr); ###VERBOSE */
+				if (inst.mytar_options[T]){
+					printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr);
+				}
 				free(attr.link_ptr);
 			}
 		}
@@ -358,7 +364,9 @@ int extractMyTar(char **mt_name, mytar_instructions inst) {
 	pointer =0 ;
 	stop = mytar_state.st_size;
 
-	fprintf(stdout,".mytar total size: %ld\n",stop);
+	if (inst.mytar_options[T]){
+		fprintf(stdout,".mytar total size: %ld\n",stop);
+	}
 	
 	while(pointer != stop) {
 		pointer = gatherFields(fd_s, inst);
