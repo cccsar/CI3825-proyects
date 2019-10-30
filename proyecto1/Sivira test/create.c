@@ -98,7 +98,7 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
  */
 void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) { 
 		
-	char *temp_buffer ;
+	char *temp_buffer = (char*) malloc(MAX_RW*sizeof(char)+1);
 	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1); 
 	int read_length, to_write;
 	struct stat st_dest;

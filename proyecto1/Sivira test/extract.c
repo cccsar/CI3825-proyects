@@ -36,7 +36,7 @@
  */
 void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) { 
 
-	char *temp_buffer;
+	char *temp_buffer = (char*) malloc(MAX_RW*sizeof(char)+1);
 	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1);
 	int read_length, to_write, write_count;
 	struct stat st_dest;
