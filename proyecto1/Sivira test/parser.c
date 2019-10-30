@@ -330,6 +330,18 @@ int verifyOptions(mytar_instructions instructions){
 		return -1;
 	}
 
+	/*Verifica si se intenta crear un .mytar y dar directorio de salida*/
+	if (instructions.mytar_options[C] && instructions.mytar_options[O]){
+		printf("You can't use -c and -o at the same time\n");
+		return -1;
+	}
+
+	/*Verifica si se intenta mostrar un .mytar y dar directorio de salida*/
+	if (instructions.mytar_options[T] && instructions.mytar_options[O]){
+		printf("You can't use -t and -o at the same time\n");
+		return -1;
+	}
+
 	/*Verifica si se intenta extraer un .mytar y encriptar*/
 	if (instructions.mytar_options[X] && instructions.mytar_options[Z]){
 		printf("You can't use -x and -z at the same time\n");
