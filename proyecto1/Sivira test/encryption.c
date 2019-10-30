@@ -14,8 +14,8 @@
 #include "encryption.h"
 
 #define MAXCHARVALUE 127
-#define MINCHARVALUE 0
-#define COFFSET MAXCHARVALUE - MINCHARVALUE + 1 
+#define MINCHARVALUE 32
+#define COFFSET 96 
 
 /*
  *  encrypt
@@ -38,7 +38,7 @@ char* encrypt(char *string, int offset){
 		while(i < strlen(new_str)){
 			if(new_str[i]){
 				/*El espacio en blanco y el caracter de separacion son saltados*/
-				if (new_str[i] != 32 && new_str[i] != 2){
+				if (new_str[i] > 32){
 					/*Verifica si el offset es positivo o negativo*/
 					if (c_offset > 0){ 
 						/*Desplaza a la izquierda*/
