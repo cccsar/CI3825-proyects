@@ -35,8 +35,9 @@
  * 	mytar
  */
 void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) { 
+
 	char *temp_buffer;
-	char *buffer = (char*) malloc( MAX_RW * sizeof(char)+1);
+	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1);
 	int read_length, to_write, write_count;
 	struct stat st_dest;
 
@@ -45,11 +46,9 @@ void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions
 
 	while( (read_length = read(fd_source, buffer, read_length)) != 0 && write_count < total){
 	
+		/*Modifica el string a escribir si se va a desencriptar */
 		if (inst.mytar_options[Y]) {
-			temp_buffer = encrypt(buffer, inst.encryption_offset);
-			if (temp_buffer == NULL){
-				printf("Malditasea");
-			} 
+			temp_buffer = (char*)encrypt(buffer, inst.encryption_offset);
 			strncpy(buffer,temp_buffer,read_length);
 			free(temp_buffer); 
 		}

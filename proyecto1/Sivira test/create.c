@@ -290,7 +290,13 @@ int createMyTar(int n_files, char **files, mytar_instructions inst) {
 	}
 
 	for(i=1; i<n_files; i++) { 
-		printf("%s\n", files[i]);
+
+		/*
+		if (inst.mytar_options[V]){
+			verboseMode(inst, files[i]);
+		}
+		*/
+
 		if( stat(files[i], &current_st) != 0) { 
 			perror("stat");
 			continue;
