@@ -49,15 +49,10 @@ void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions
 
 /* getField
  * --------------
- * Dado un "file descriptor" y un entero, devuelve un string del tamano 
- * especificado obtenido del archivo asociado al "file descriptor". 
- *
- * Como el tamano es calculado antes como el de un campo de cabecera de .mytar,
- * lo que esta funcion realmente devuelve es un "string" asociado a un campo
- * de cabecera.
- *
+ * Devuelve un string que representa un campo de cabecera de archivo .mytar
  *
  * 	fd: "file descriptor" del archivo .mytar.
+ * 	filed_length: tamano del campo de cabecera
  *
  * retorna: "string" correspondiente a un campo de cabecera.
  */
@@ -95,12 +90,9 @@ long putField(int fd) ;
  * Para cualquier archivo, se encarga de modificar su permisos (bits modales)
  * asi como su dueno y grupo, utilizando ung gid y un uid.
  *
- * 	name: Nombre del archivo
- * 	mode: Bits modales del archivo
- * 	uid: "User ID" del archivo
- * 	gid: "Group ID" del archivo
+ * 	attr: Estructura de donde obtiene lo que modifica
  */
-void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) ;
+void setModeAndOwn(f_att attr);
 
 
 /* myLs
