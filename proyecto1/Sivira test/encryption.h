@@ -1,7 +1,7 @@
 /*
  * Archivo: encryption.c
  *
- * Descripcion: Encrypta una cadena con un desplazamiento dado.
+ * Descripcion: Encripta una cadena con un desplazamiento dado.
  *
  * Autores:
  *	Carlos Alejandro Sivira Munoz 		15-11377

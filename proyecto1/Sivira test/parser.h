@@ -2,7 +2,7 @@
  * Archivo: parser.c
  *
  * Descripcion: Recibe una entrada por la linea de comandos y retorna una 
- * estructura con ls informacion de las opciones activas de mytar y sus 
+ * estructura con la informacion de las opciones activas de mytar y sus 
  * argumentos.
  *
  * Autores:
@@ -25,7 +25,7 @@
 #define F 8
 #define S 9
 /*
-* Estructura que contiene la informaci[on de las opciones activas y sus 
+* Estructura que contiene la informacion de las opciones activas y sus 
 * argumentos.
 */
 typedef struct tar_instructions{
@@ -43,10 +43,10 @@ typedef struct tar_instructions{
  * -------------------
  *  Recibe la entrada del comando mytar y retorna la estructura de opciones.
  *
- *  num_arguments: numero de argumentos suministrados.
+ *  num_arguments: Numero de argumentos suministrados.
  *  arguments: Argumentos dados para almacenar en la estructura.
  *
- *  Retorno: apuntador a la estructura de opciones mytar_instructions.
+ *  Retorno: Apuntador a la estructura de opciones mytar_instructions.
  */
 mytar_instructions* parse(int num_arguments, char **arguments);
 /*
@@ -54,7 +54,7 @@ mytar_instructions* parse(int num_arguments, char **arguments);
  * -------------------
  *  Inicializa la estructura de opciones mytar_instructions.
  *
- * 	Retorno: apuntador a la estructura de opciones mytar_instructions. Si 
+ * 	Retorno: Apuntador a la estructura de opciones mytar_instructions. Si 
  * 	existe un error, returna NULL. 
  */
 mytar_instructions* instructionsInit();
@@ -67,7 +67,7 @@ mytar_instructions* instructionsInit();
  *  			  mytar.
  *  filePath: La ruta del archivo actual.
  *
- * 	Retorno: vacio.
+ * 	Retorno: Vacio.
  */
 void verboseMode(mytar_instructions instructions, char *filePath);
 
