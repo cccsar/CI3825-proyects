@@ -18,6 +18,8 @@
 #include <string.h> 
 #include <unistd.h>
 #include <string.h>
+#include <pwd.h>
+#include <grp.h> 
 #include "extract.h"
 #include "parser.h"
 
@@ -172,6 +174,59 @@ void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
 }
 
 
+/* myLs
+ * --------------
+ * Imprime un listado similar al del comando ls -l de los archivos
+ * presentes en el .mytar
+ *
+ *
+ * 	attr: Estructura que contiene los atributos del archivo. 
+ * 	type: Entero que representa el tipo de archivo. 1=regular
+ * 		2=directorio, 3=Link simbolico
+ */
+void myLs(f_att attr, int type ) { 
+
+	char mode_formatted[9]; 
+	struct passwd* pwd;  
+	struct group* grp; 
+	int i, move; 
+	long permissions; 
+
+	pwd = getpwuid(attr.uid); 
+	grp = getgrgid(attr.gid);
+	permissions = attr.mode & 0777; 
+	move = 1; 
+
+	for (i=8; i>-1; i--) { 
+		if( (attr.mode & move) == move) {
+
+			if (i%3 == 2) 
+				mode_formatted[i] = 'x'; 
+			else if (i%3 == 1) 
+				mode_formatted[i] = 'w'; 
+			else  
+				mode_formatted[i] = 'r'; 
+		}
+		else 
+			mode_formatted[i] = '-';
+		move <<= 1; 
+	}
+
+
+	if (type == 1) { 
+		printf("-%9s %5s %5s %4ld %s\n", mode_formatted, pwd->pw_name,
+			       	grp->gr_name,  attr.size, attr.name); 
+	}
+	else if (type == 2) { 
+		printf("d%9s %5s %5s %4s %s\n",mode_formatted, pwd->pw_name, 
+			       	 grp->gr_name, "",  attr.name);
+	}
+	else { 
+		printf("l%9s %5s %5s %4ld %s -> %-10s\n",mode_formatted, 
+			       	pwd->pw_name, grp->gr_name,  attr.size, attr.name, attr.link_ptr);
+	}
+
+}
 /* createFile
  * --------------
  * Crea un archivo de alguno de los tipos considerados (regulares, directorios,
@@ -197,23 +252,27 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 	if( (attr.mode & __S_IFMT) == __S_IFREG) {
 		return_v +=  attr.size;
 
-		new_fd = open(attr.name, CREATION_MODE); 	
-		if (new_fd == -1) {
-			lseek(fd, attr.size , SEEK_CUR);
-			fprintf(stderr,"Error creando archivo %s\n", attr.name); 
-			perror("open");
-		}
-		else {
+		if (inst.mytar_options[T]) {
+			myLs(attr, 1);
+			lseek(fd, attr.size, SEEK_CUR);
 
-			if (inst.mytar_options[T]){
-				printf("extracting %o %d %d %ld %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.size, attr.name); 
-			} else {
+		}
+		else { 
+			new_fd = open(attr.name, CREATION_MODE); 	
+			if (new_fd == -1) {
+				lseek(fd, attr.size , SEEK_CUR);
+				fprintf(stderr,"Error creando archivo %s\n", attr.name); 
+				perror("open");
+			}
+			else {
+
 				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
 				fileWriterBounded(fd, new_fd, attr.size, inst); 
 				lseek(fd, -1, SEEK_CUR);
-			}
+			
 
 			close(new_fd); 			
+			}
 		}
 	}
 
@@ -221,16 +280,19 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 	else if( (attr.mode & __S_IFMT) == __S_IFDIR) {
 
 		
-		if( stat(attr.name, &test_state) == -1 ) {
+		if (inst.mytar_options[T]) {
+			myLs(attr, 2) ;
+		}
+		else { 
+			
+			if( stat(attr.name, &test_state) == -1 ) {
 		
-			if( mkdir(attr.name, attr.mode) == -1) {
-				fprintf(stderr,"Error creando directorio %s\n",attr.name);
-				perror("mkdir");
-			}
-			else {
-				setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
-				if (inst.mytar_options[T]){
-					printf("extracting %o %d %d %s\n", attr.mode & 07777, attr.uid, attr.gid, attr.name);
+				if( mkdir(attr.name, attr.mode) == -1) {
+					fprintf(stderr,"Error creando directorio %s\n",attr.name);
+					perror("mkdir");
+				}
+				else {
+					setModeAndOwn(attr.name, attr.mode & 07777, attr.uid, attr.gid);
 				}
 			}
 		}
@@ -244,19 +306,21 @@ int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 		/*Verifica si es necesario ignorar el archivo*/
 		if (!inst.mytar_options[N]) {
 
-			new_fd = symlink(attr.link_ptr, attr.name);
-			if (new_fd == -1) {
-				fprintf(stderr,"Error creando link\n");
-				perror("symlink");
-			}	
-			else {
+			if (inst.mytar_options[T]) {
+				myLs(attr, 3);
+			}
+			else { 
+				new_fd = symlink(attr.link_ptr, attr.name);
+				if (new_fd == -1) {
+					fprintf(stderr,"Error creando link\n");
+					perror("symlink");
+				}	
+				else {
 
-				setModeAndOwn(attr.link_ptr, attr.mode & 07777,
-						attr.uid, attr.gid);
-				if (inst.mytar_options[T]){
-					printf("extracting %o %d %d %ld %s->%s\n", attr.mode & 0777, attr.uid, attr.gid, attr.size, attr.name, attr.link_ptr);
+					setModeAndOwn(attr.link_ptr, attr.mode & 07777,
+							attr.uid, attr.gid);
+					free(attr.link_ptr);
 				}
-				free(attr.link_ptr);
 			}
 		}
 

@@ -103,6 +103,19 @@ long putField(int fd) ;
 void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) ;
 
 
+/* myLs
+ * --------------
+ * Imprime un listado similar al del comando ls -l de los archivos
+ * presentes en el .mytar
+ *
+ *
+ * 	attr: Estructura que contiene los atributos del archivo. 
+ * 	type: Entero que representa el tipo de archivo. 1=regular
+ * 		2=directorio, 3=Link simbolico
+ */
+void myLs(f_att attr, int type ) ;
+
+
 /* createFile
  * --------------
  * Crea un archivo de alguno de los tipos considerados (regulares, directorios,
@@ -145,6 +158,7 @@ int gatherFields(int fd, mytar_instructions inst) ;
 int extractMyTar(char** mt_name, mytar_instructions inst);
 
 #endif
+
 
 
 
