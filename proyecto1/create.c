@@ -20,38 +20,9 @@
 #include <unistd.h>
 #include <string.h>
 #include "create.h"
-/*#include "encryption.h" */
-/*#include "parser.h" */
+#include "encryption.h" 
+#include "parser.h" 
 
-#define MAX_RW 16
-
-#define CREATE_APPEND_MODE O_WRONLY | O_TRUNC | O_CREAT
-#define MY_PERM S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH 
-#define STUFF_TOKEN ''
-
-/*
-* writeToDest
- * ----------
- * Escribe el "string" test al archivo que corresponde con el "file descriptor"
- * fd_dest.
- *
- * Dado que se usa para crear archivos .mytar, se asume que el archivo asociado
- * con el "file descriptor" esta abierto y en modo "APPEND".
- * 
- *
- * 	fd_dest: "file descriptor" del archivo .mytar
- * 	text: "String" de lo que sera escrito
- * 	size: Tamano del "string" a escribir
- *
-void writeToDest(int fd_dest, char* text, int size) {	
-						
-	int read_size ; 
-	
-	read_size = 0;
-	while(size > read_size)
-		read_size+=write(fd_dest, text+read_size,size-read_size); 
-}
-*/
 
 /* setHeadFields
  * ----------
@@ -82,17 +53,17 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
 	file_type = mode & __S_IFMT;
 
 	/*	Anado el modo del archivo 	*/
-	len = dprintf(fd_dest,"%d%c", mode ,STUFF_TOKEN);	
+	dprintf(fd_dest,"%d%c", mode ,STUFF_TOKEN);	
 	
 	/*	Anado el uid del archivo 	*/
 	dprintf(fd_dest,"%d%c", uid, STUFF_TOKEN);
 	
 	/*	Anado el gid del archivo 	*/
-	len = dprintf(fd_dest,"%d%c", gid, STUFF_TOKEN);
+	dprintf(fd_dest,"%d%c", gid, STUFF_TOKEN);
 
 	if( file_type != __S_IFDIR )  {
 		/*	Anado el tamano del archivo	 */
-		len = dprintf(fd_dest,"%ld%c", size, STUFF_TOKEN); 
+		dprintf(fd_dest,"%ld%c", size, STUFF_TOKEN); 
 	}
 
 	/* 	anado el tamano del nombre */
@@ -100,7 +71,7 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
 	dprintf(fd_dest,"%d%c", field_size, STUFF_TOKEN);
 
 	/*	Anado el nombre del archivo 	*/
-	len = dprintf(fd_dest ,"%s%c", name, STUFF_TOKEN); 
+	dprintf(fd_dest ,"%s%c", name, STUFF_TOKEN); 
 
 	if ( file_type  == __S_IFLNK) {
 		pointer = (char*) malloc(size + 1); 
@@ -122,24 +93,33 @@ void setHeadFields(int fd_dest, struct stat state, char *name) {
  *
  * 	fd_source: "file descriptor" del archivo del que se lee
  * 	fd_dest: "file descriptor" del archivo al que se escribe
+ *  	instructions: Estructura que contiene la informacion de las opciones
+ *  	de mytar.
  */
-void fileWriter(int fd_source, int fd_dest) { 
+void fileWriter(int fd_source, int fd_dest, mytar_instructions inst) { 
 		
-	char buffer[MAX_RW], header[MAX_RW];
-	int just_read, to_write;
+	char *temp_buffer = (char*) malloc(MAX_RW*sizeof(char)+1);
+	char *buffer = (char*) malloc(MAX_RW*sizeof(char)+1); 
+	int read_length, to_write;
 	struct stat st_dest;
 
-	just_read = MAX_RW;
+	read_length = 1; 
 	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0) {
+	while( (read_length = read(fd_source, buffer, read_length)) != 0) {
 	
+		/* modifica el string a escribir si se va a encriptar*/
+		if (inst.mytar_options[Z]) {
+			temp_buffer = (char*) encrypt(buffer, inst.encryption_offset); 
+			strncpy(buffer,temp_buffer,MAX_RW);
+			free(temp_buffer);
+		}
+
 		to_write = 0;
-		while(just_read > to_write) 
-			to_write += write(fd_dest,buffer+to_write,just_read-to_write); /*###ENCRYPT/DECRYPT*/
+		while(read_length > to_write) 
+			to_write += write(fd_dest,buffer+to_write,read_length-to_write); 
 	}
 
-
-
+	free(buffer);
 }
 
 
@@ -152,6 +132,8 @@ void fileWriter(int fd_source, int fd_dest) {
  *  	fd_dest: File descriptor de archivo .mytar.
  *  	pathname: nombre del archivo que se esta procesando.
  *  	current_st: Estado del archivo.
+ * 	instructions: Estructura que contiene la informacion de las opciones de
+ *  	 mytar.
  *
  * Retorna NULL, o DIR* en caso de que el archivo procesado sea un directorio.
  * Esto porque si es un directorio, debo procesar sus campos de cabecera y 
@@ -159,11 +141,10 @@ void fileWriter(int fd_source, int fd_dest) {
  * al directorio abierto a la funcion que llama.
  *
  */
-DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
+DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st, mytar_instructions inst) {
 
 	DIR *ith_pointer;
 	int current_fd_dest;
-	struct stat st_for_symlink;
 	char *pointer;
 
 	/* El archivo es un directorio */
@@ -176,12 +157,16 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname);  	/*###VERBOSE*/
+		/*Verifica si el modo verboso esta activo*/
+		if (inst.mytar_options[V]){
+			verboseMode(inst, pathname);
+		}
 
 		setHeadFields(fd_dest, current_st, pathname);
 		
 		return ith_pointer;
 	}
+
 	/* El archivo es regular */
 	else if ( (current_st.st_mode & __S_IFMT) == __S_IFREG ) {
 	
@@ -192,17 +177,23 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
 			return NULL;
 		}
 
-		printf("archiving %s\n",pathname);  /*###VERBOSE*/
+		if (inst.mytar_options[V]){
+			verboseMode(inst, pathname);
+		}
 
 		setHeadFields(fd_dest, current_st, pathname);
-		fileWriter(current_fd_dest, fd_dest); 
+		fileWriter(current_fd_dest, fd_dest, inst); 
 		close(current_fd_dest);			
 	}
-	/* El archivo es un link simbolico */ 		/*###IGNORE LINK*/
-	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK) {
-		printf("archiving %s\n",pathname);  /*###VERBOSE*/
 
-		setHeadFields(fd_dest, current_st, pathname);
+	/* El archivo es un link simbolico */ 		
+	else if ( (current_st.st_mode & __S_IFMT) == __S_IFLNK ) {
+
+		/*Verifica si es necesario ignorar este archivo*/
+		if (!inst.mytar_options[N]){
+			setHeadFields(fd_dest, current_st, pathname);
+
+		}
 	}
 
 	return NULL;
@@ -221,11 +212,13 @@ DIR *handleFileType(int fd_dest, char* pathname, struct stat current_st) {
  * 	dir: apuntador al directorio que se esta recorriendo
  * 	dirname: nombre del directorio que se esta recorriendo
  * 	fd: file descriptor del archivo .mytar que se esta creando
+ *  	instructions: Estructura que contiene la informacion de las opciones de
+ *  	 mytar.
  */
-void traverseDir(DIR *dir, char *dirname, int fd) { 
+void traverseDir(DIR *dir, char *dirname, int fd, mytar_instructions inst) { 
 
 	int len; 
-	char path[3000], pathname[3000]; 
+	char path[MAX_PATHNAME], pathname[MAX_PATHNAME]; 
 	DIR *is_dir;
 	struct dirent *current_ent; 
 	struct stat current_st; 
@@ -251,9 +244,13 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
 			
-			is_dir = handleFileType(fd, pathname, current_st);
+			/* Verifica que la entrada revisada sea un directorio
+			 * Si lo es la recorre
+			 * de lo contrario lee la siguiente entrada
+			 */
+			is_dir = handleFileType(fd, pathname, current_st, inst);
 			if (is_dir != NULL) {
-				traverseDir(is_dir, pathname, fd);
+				traverseDir(is_dir, pathname, fd, inst);
 				closedir(is_dir);
 			}
 
@@ -269,7 +266,7 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
  * archivo recibido en la linea de comandos para obtener atributos que usar
  * como campos de cabecera para el archivo .mytar.
  *
- * Procesa cada argumento recibido, primero verificando que exite y luego:
+ * Procesa cada argumento recibido, primero verificando que existe y luego:
  * 	Si es un directorio:
  * 		lo abre, lo recorre (asignando los respectivos campos) y lo cierra.
  * 	En caso contrario:
@@ -277,23 +274,26 @@ void traverseDir(DIR *dir, char *dirname, int fd) {
  *	
  *	files: Archivos a procesar
  *	n_files: Numero de archivos a procesar
+ *  	instructions: Estructura que contiene la informacion de las opciones de
+ *  		mytar.
  */
-int createMyTar(int n_files, char **files) {  	
+int createMyTar(int n_files, char **files, mytar_instructions inst) {  	
 	
 	int fd, current_fd, i;
-	char *local_path = (char*) malloc(3000);
+	char *local_path = (char*) malloc(MAX_PATHNAME);
 	DIR *dir, *current_dir;
 	struct stat current_st;
 
-	fd = open(files[1], CREATE_APPEND_MODE, MY_PERM);
-	if (fd == -1)
-	{
+
+	fd = open(files[0], CREATE_APPEND_MODE, MY_PERM);
+	if (fd == -1) {
+		fprintf(stderr,"Error creando archivo .mytar\n");
 		perror("open\n"); 
-		exit(-1); 
+
+		return -1; 
 	}
 
-
-	for(i=2; i<n_files; i++) { 
+	for(i=1; i<n_files; i++) { 
 
 		if( stat(files[i], &current_st) != 0) { 
 			perror("stat");
@@ -302,10 +302,10 @@ int createMyTar(int n_files, char **files) {
 		
 		strcat(local_path, files[i]);
 		
-		current_dir = handleFileType(fd, local_path, current_st) ;
+		current_dir = handleFileType(fd, local_path, current_st, inst) ;
 
 		if (current_dir != NULL) {
-			traverseDir(current_dir, files[i], fd);
+			traverseDir(current_dir, files[i], fd, inst);
 			closedir(current_dir); 				
 		}
 

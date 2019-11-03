@@ -18,11 +18,11 @@
 #include <string.h> 
 #include <unistd.h>
 #include <string.h>
+#include <pwd.h>
+#include <grp.h> 
 #include "extract.h"
+#include "parser.h"
 
-#define STUFF_TOKEN ''
-#define CREATION_MODE O_WRONLY | O_TRUNC | O_CREAT
-#define max(X,Y) ((X > Y)? X: Y)
 
 
 /* fileWriterBounded
@@ -33,47 +33,53 @@
  *
  * 	fd_source: "file descriptor" del archivo del que se copia.
  * 	fd_dest: "file descriptor" del archivo al que se copia.
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  */
-void fileWriterBounded(int fd_source, int fd_dest, int total) { 
-		
-	char buffer[1];
-	int just_read, to_write, write_count;
+void fileWriterBounded(int fd_source, int fd_dest, int total, mytar_instructions inst) { 
+
+	char *temp_buffer = (char*) malloc( MAX_RW * sizeof(char) + 1 );
+	char *buffer = (char*) malloc( MAX_RW * sizeof(char) + 1);
+	int read_length, to_write, write_count;
 	struct stat st_dest;
 
-	just_read = 1;
+	read_length = 1;
 	write_count = 0; 
-	
-	while( (just_read = read(fd_source, buffer, just_read)) != 0 && write_count < total){
-	
 
-		to_write = 0;
-		while(just_read > to_write)  {
-			to_write += write(fd_dest, buffer+to_write, just_read - to_write); /*###ENCRYPT/DECRYPT*/
+	while( (read_length = read(fd_source, buffer, read_length)) != 0 && write_count < total){
+	
+		/*Modifica el string a escribir si se va a desencriptar */
+		if (inst.mytar_options[Y]) {
+			temp_buffer = (char*)encrypt(buffer, inst.encryption_offset);
+			strncpy(buffer,temp_buffer,read_length);
+
+			free(temp_buffer); 
 		}
 
-		write_count += just_read;
+		to_write = 0;
+		while(read_length > to_write)  
+			to_write += write(fd_dest, buffer+to_write, read_length - to_write); 
+
+		write_count += read_length;
 	}
+
+	free(buffer);
 }
 
 
 /* getField
  * --------------
- * Dado un "file descriptor" y un entero, devuelve un string del tamano 
- * especificado obtenido del archivo asociado al "file descriptor". 
- *
- * Como el tamano es calculado antes como el de un campo de cabecera de .mytar,
- * lo que esta funcion realmente devuelve es un "string" asociado a un campo
- * de cabecera.
- *
+ * Devuelve un string que representa un campo de cabecera
+ * de archivo .mytar
  *
  * 	fd: "file descriptor" del archivo .mytar.
+ * 	field_length: Tamano del campo de cabecera
  *
  * retorna: "string" correspondiente a un campo de cabecera.
  */
 char *getField(int fd, int field_length) {
 	char *name;
 	int just_read;
-	int testing;
 
 	name = (char*) malloc ( field_length + 1) ; 
 
@@ -105,7 +111,7 @@ int getFieldSize(int fd) {
 	as = '0';
 	acum = 0;
 
-	while(as != '') {
+	while(as != STUFF_TOKEN) {
 		acum += read(fd, &as, 1);
 	}
 
@@ -145,42 +151,96 @@ long putField(int fd) {
  * Para cualquier archivo, se encarga de modificar su permisos (bits modales)
  * asi como su dueno y grupo, utilizando ung gid y un uid.
  *
- * 	name: Nombre del archivo
- * 	mode: Bits modales del archivo
- * 	uid: "User ID" del archivo
- * 	gid: "Group ID" del archivo
+ * 	attr: Estructura de donde obtiene lo que modifica
  */
-void setModeAndOwn(char* name, mode_t mode, uid_t uid, gid_t gid) {
+void setModeAndOwn(f_att attr) {
 	int catcher;
 	
-	catcher = chmod(name, mode); 
-	if (catcher == -1)
+	catcher = chmod(attr.name, attr.mode); 
+	if (catcher == -1) {
+		printf("Error cambiando los permisos de %s\n",attr.name);
 		perror("chmod");
+	}
 
-	catcher = chown(name, uid, gid);	
-	if (catcher == -1) 
+	catcher = chown(attr.name, attr.uid, attr.gid);	
+	if (catcher == -1) {
+		printf("Error cambiando al dueno de  %s\n",attr.name);
 		perror("chown");
+	}
 }
 
 
+/* myLs
+ * --------------
+ * Imprime un listado similar al del comando ls -l de los archivos
+ * presentes en el .mytar
+ *
+ *
+ * 	attr: Estructura que contiene los atributos del archivo. 
+ * 	type: Entero que representa el tipo de archivo. 1=regular
+ * 		2=directorio, 3=Link simbolico
+ */
+void myLs(f_att attr, int type ) { 
+
+	char mode_formatted[9]; 
+	struct passwd* pwd;  
+	struct group* grp; 
+	int i, move; 
+	long permissions; 
+
+	pwd = getpwuid(attr.uid); 
+	grp = getgrgid(attr.gid);
+	permissions = attr.mode & 0777; 
+	move = 1; 
+
+	/* Verifico los bits de permisos para saber cuales
+	 * estan encendidos, y modifico mode_format en funcion
+	 * de eso */
+	for (i=8; i>-1; i--) { 
+		if( (attr.mode & move) == move) {
+
+			if (i%3 == 2) 
+				mode_formatted[i] = 'x'; 
+			else if (i%3 == 1) 
+				mode_formatted[i] = 'w'; 
+			else  
+				mode_formatted[i] = 'r'; 
+		}
+		else 
+			mode_formatted[i] = '-';
+		move <<= 1; 
+	}
+
+
+	if (type == 1) { 
+		printf("-%9s %5s %5s %4ld %s\n", mode_formatted, pwd->pw_name,
+			       	grp->gr_name,  attr.size, attr.name); 
+	}
+	else if (type == 2) { 
+		printf("d%9s %5s %5s %4s %s\n",mode_formatted, pwd->pw_name, 
+			       	 grp->gr_name, "",  attr.name);
+	}
+	else { 
+		printf("l%9s %5s %5s %4ld %s -> %-10s\n",mode_formatted, 
+			       	pwd->pw_name, grp->gr_name,  attr.size,
+			       	attr.name, attr.link_ptr);
+	}
+
+}
 /* createFile
  * --------------
  * Crea un archivo de alguno de los tipos considerados (regulares, directorios,
  * links simbolicos) y actualiza sus atributos.
  *
- *
  * 	fd: "file descriptor" del archivo .mytar
- * 	offset: posicion actual del apuntador en el archivo .mytar
- * 	name: Nombre del archivo que se esta creando
- * 	mode: Modo que se asignara al archivo que se esta creando.
- * 	size: Tamano del archivo que se esta creando
- * 	uid: "User ID" del archivo que se esta creando
- * 	gid: "Group ID" del archivo que se esta creando
- * 	link_name: Nombre del archivo al que apunta un link simbolico (solo para links simbolicos)
- * 	
- * Retorna la posicion actual del apuntador. En caso de error retorna 0.
+ * 	offset: posicion actual sobre el archivo .mytar
+ * 	attr: estructura que contiene los atributos a actualizar
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
+ *
+ * Retorna la posicion actual del apuntador
  */
-int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t uid, gid_t gid, char* link_name) {
+int createFile(int fd, long offset, f_att attr, mytar_instructions inst) {
 	int new_fd;
 	int catcher;
 	int return_v;
@@ -189,60 +249,86 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
 	return_v = offset;
 
 	/* El archivo es regular */
-	if( (mode & __S_IFMT) == __S_IFREG) {
-		return_v +=  size;
+	if( (attr.mode & __S_IFMT) == __S_IFREG) {
+		return_v +=  attr.size;
 
-		new_fd = open(name, CREATION_MODE); 	
-		if (new_fd == -1) {
-			lseek(fd, size , SEEK_CUR);
-			fprintf(stderr,"Error creando archivo %s\n", name); 
-			perror("open");
+		if (inst.mytar_options[T]) {
+			myLs(attr, 1);
+			lseek(fd, attr.size, SEEK_CUR);
+
 		}
-		else {
-
-			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %ld %s\n", mode & 07777, uid, gid, size, name); /*###VERBOSE*/
-
-			fileWriterBounded(fd, new_fd, size);
-			lseek(fd, -1, SEEK_CUR);
-
-			close(new_fd); 			
-		}
-	}
-	/* El archivo es un directorio */
-	else if( (mode & __S_IFMT) == __S_IFDIR) {
-
-		if( stat(name, &test_state) == -1 ) {
-		
-			if( mkdir(name, mode) == -1) {
-				fprintf(stderr,"Error creando directorio %s\n",name);
-				perror("mkdir");
+		else { 
+			new_fd = open(attr.name, CREATION_MODE); 	
+			if (new_fd == -1) {
+				lseek(fd, attr.size , SEEK_CUR);
+				fprintf(stderr,"Error creando archivo %s\n", attr.name); 
+				perror("open");
 			}
 			else {
 
-				setModeAndOwn(name, mode & 07777, uid, gid);
-				printf("extracting %o %d %d %s\n", mode & 07777, uid, gid, name); /*###VERBOSE*/
+				setModeAndOwn(attr);
+				fileWriterBounded(fd, new_fd, attr.size, inst); 
+				lseek(fd, -1, SEEK_CUR);
+			
+
+			close(new_fd); 			
+			}
+		}
+	}
+
+	/* El archivo es un directorio */
+	else if( (attr.mode & __S_IFMT) == __S_IFDIR) {
+
+		
+		if (inst.mytar_options[T]) {
+			myLs(attr, 2) ;
+		}
+		else { 
+			
+			if( stat(attr.name, &test_state) == -1 ) {
+		
+				if( mkdir(attr.name, attr.mode) == -1) {
+					fprintf(stderr,"Error creando directorio%s\n",
+							attr.name);
+					perror("mkdir");
+				}
+				else 
+					setModeAndOwn(attr);
 			}
 		}
 
 
 	}
+
 	/* El archivo es un link simbolico */
-	else if( (mode & __S_IFMT) == __S_IFLNK) { /*###IGNORE LINK*/
+	else if( (attr.mode & __S_IFMT) == __S_IFLNK) {
 
-		new_fd = symlink(link_name, name);
-		if (new_fd == -1) {
-			fprintf(stderr,"Error creando link\n");
-			perror("symlink");
-		}	
-		else {
+		/*Verifica si es necesario ignorar el archivo*/
+		if (!inst.mytar_options[N]) {
 
-			setModeAndOwn(name, mode & 07777, uid, gid);
-			printf("extracting %o %d %d %ld %s->%s\n", mode & 0777, uid, gid, size, name, link_name); /*###VERBOSE*/
+			if (inst.mytar_options[T]) {
+				myLs(attr, 3);
+			}
+			else { 
+				new_fd = symlink(attr.name, attr.link_ptr);
+				if (new_fd == -1) {
+					fprintf(stderr,"Error creando link %s\n", attr.name);
+					perror("symlink");
+				}	
+				else {
 
-			free(link_name);
+					printf("nombre link %s nombre apuntador %s\n",attr.name, attr.link_ptr); 
+					setModeAndOwn(attr);
+					free(attr.link_ptr);
+				}
+			}
 		}
 
+	}
+
+	/* Verifica si el modo verboso esta activo */
+	if (inst.mytar_options[V]){
+		verboseMode(inst, attr.name);
 	}
 
 	return return_v;
@@ -254,7 +340,7 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
  *  Esta funcion junta los campos de cabecera (tanto numericos como no
  *  numericos) con el objeto de reunir los atributos necesarios para 
  *  crear el archivo empaquetado. Esto ultimo lo hace con una llamada a 
- *  create().
+ *  createFile().
  *
  *  Los campos estan ordenados de la forma:
  *  	modo # uid # gid [ # size] # name_size # name [# link_pointer] #
@@ -264,51 +350,49 @@ int createFile(int fd, long offset, char *name, mode_t mode, long size, uid_t ui
  *
  *
  *  	fd = "file descriptor" del .mytar
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  *
- *  retorna: el offset actual del archivo, o -1 en caso de error.
+ *  retorna: el offset actual del archivo
  */
-int gatherFields(int fd) {
-	mode_t mode;
-	uid_t uid;
-	gid_t gid;
-	int new_fd, propper_read;
-	long size, name_size, current_offset, previous_offset, local;
-	char* name;
-	char* link_pointer;
+int gatherFields(int fd, mytar_instructions inst) {
+	int new_fd; 
+	long name_size, current_offset, previous_offset;
+	f_att attr;
 
 	
-	mode = putField(fd);
-	uid = putField(fd);
-	gid = putField(fd);
+	attr.mode = putField(fd);
+	attr.uid = putField(fd);
+	attr.gid = putField(fd);
 
-	if ( (mode & __S_IFMT) != __S_IFDIR ) {
-		size = putField(fd);
-	}
+	/* Si no es un directorio, guardo el tamano del archivo */
+	if ( (attr.mode & __S_IFMT) != __S_IFDIR ) 
+		attr.size = putField(fd);
+	
 	name_size = putField(fd);	
 
-	name = (char*) malloc(name_size + 1);  		
-	propper_read = read(fd, name, name_size ); 	
-	name[name_size] = '\0';
+	attr.name = (char*) malloc(name_size + 1);  		
+	read(fd, attr.name, name_size ); 	
+	attr.name[name_size] = '\0';
 
 	/* Para los links simbolicos, extraigo el apuntador */
-	if( (mode & __S_IFMT) == __S_IFLNK) {
+	if( (attr.mode & __S_IFMT) == __S_IFLNK) {
 		current_offset = lseek(fd, 1, SEEK_CUR); 
 
-		link_pointer = (char*) malloc(size + 1);
-		propper_read = read(fd, link_pointer, size);
+		attr.link_ptr = (char*) malloc(attr.size + 1);
+		read(fd, attr.link_ptr, attr.size);
 
-		if (propper_read == -1)
-			perror("read");
-		link_pointer[size] = '\0';
+		attr.link_ptr[attr.size] = '\0';
 	}
 
 	previous_offset = lseek(fd, 1, SEEK_CUR); 
 
 	/* Creo el tipo de archivo y asigno sus atributos */
-	current_offset = createFile(fd, previous_offset, name, mode, size, uid, gid, link_pointer);
 
+	current_offset = createFile(fd, previous_offset, attr, inst);
 
-	free(name); 					
+	free(attr.name);
+
 	return max(previous_offset, current_offset);
 }
 
@@ -319,30 +403,46 @@ int gatherFields(int fd) {
  * Recibe un archivo .mytar y se encarga de extraer su contenido.
  *
  * 	mt_name: Nombre del archivo .mytar a procesar	
+ * 	ins: Estructura que contiene la informacion de las opciones de 
+ * 	mytar
  */
-int extractMyTar(char **mt_name) {  			
+int extractMyTar(char **mt_name, mytar_instructions inst) {  			
 	
-	int fd_s;
+	int fd_s, dir_status;
 	long stop, pointer;
 	struct stat mytar_state;
 
-	if ( (fd_s = open(mt_name[1],O_RDONLY)) == -1)   {
+
+	if ( (fd_s = open(mt_name[0],O_RDONLY)) == -1)   {
 		perror("open");
 		return -1;
 	}
 
-	if ( stat(mt_name[1], &mytar_state) == -1)  {
+	if ( stat(mt_name[0], &mytar_state) == -1)  {
 		perror("stat");
 		return -1;
 	}
 
+
 	pointer =0 ;
 	stop = mytar_state.st_size;
 
-	fprintf(stdout,".mytar total size: %ld\n",stop); /*#dbg*/
+	if ( inst.mytar_options[O] ) {
+
+		if( chdir(inst.output_directory) == -1) { 
+			fprintf(stderr,"Error en directorio de salida\n");
+			perror("chdir"); 
+
+			return -1; 
+		}
+	}
+
+	if (inst.mytar_options[T]){
+		fprintf(stdout,".mytar total size: %ld\n",stop);
+	}
 	
 	while(pointer != stop) {
-		pointer = gatherFields(fd_s);
+		pointer = gatherFields(fd_s, inst);
 	}
 
 	close(fd_s);
@@ -353,3 +453,4 @@ int extractMyTar(char **mt_name) {
 
 
 
+			
