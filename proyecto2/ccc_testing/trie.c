@@ -174,8 +174,9 @@ int trieInsert(trie *tree, char *number ) {
 
 		current = &( tree->root[ current->sons[digit] ] ) ; 
 	}
-
+	tree->n_words++; 	
 	current->flag = TRUE; 
+	return 1; 
 }
 
 

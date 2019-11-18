@@ -70,7 +70,7 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 		{
 			strcpy(pathname, path); 		
 			
-			len = strlen( pathname ); 
+			len = strlen( pathname ) ;
 
 			if (pathname[len-1] != '/')
 				strcat(pathname,"/"); 
@@ -82,7 +82,6 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
 			
-			 printf("%s\n",pathname);  
 			/* Verifica que la entrada revisada sea un directorio
 			 * Si lo es: 
 			 * 	lo recorre
@@ -98,28 +97,25 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 			 */
 			if ( S_ISREG(current_st.st_mode) || S_ISLNK(current_st.st_mode) )  {
 
-				/*implementar find_suffix*/
+				/*esto podria ser una funcion###*/
 				if (isTxt(current_ent->d_name)) {
-					sprintf(curr_inode,"%ld",current_st.st_ino); 
-					printf("%s\n",curr_inode);
 
-					if( trieInsert(inodes, curr_inode) )  {
-						paths[ind] = pathname; 
+					/* utilizar mejor lectura/escritura segura ###*/
+					sprintf(curr_inode,"%ld",current_st.st_ino); 
+
+					if( trieInsert(inodes, curr_inode) == TRUE )  {
+						/*pido el espacio exacto para cada string*/
+						paths[ind + term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
+						/*copio el string, puede traer problemas###*/
+						strcpy(paths[ind+term],pathname);
 						term += 1; 
 					}	
-
-
-					/* implementar search_dict para buscar inodo 
-					 * if ( !dict_contains(current_ent->d_ino) ) { 
-					 * 	dict_insert(current_ent->d_ino, current_ent->d_name); 
-					 * }
-					 */
 				}
 			}
 			else if ( S_ISDIR(current_st.st_mode) ) {
 			  	curr_dir = opendir(pathname); 
 
-			 	help = traverseDir(curr_dir, pathname, inodes, paths, ind + term); 
+			 	help +=traverseDir(curr_dir, pathname, inodes, paths, ind + term); 
 
 				closedir(curr_dir);
 			}
@@ -127,7 +123,7 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 		}
 	}
 
-
+	help += ind+term; 
 	return help;  
 }
 
@@ -135,15 +131,21 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 
 /* myFind
  * --------------
+ * Busca archivos con el sufijo .txt en una jerarquia de directorios,
+ * verifica que ninguno sea un hard link de otro y recupera la lista
+ * de pathnames
  *
  *
+ * 	dirname: nombre de la raiz del arbol de directorios
+ *
+ * Retorna >0 si hay error, 1 en caso de exito
  */
 int myFind (char *dirname) { /* POR AHORA: 
 	 * 	solo funciona buscando archivos en un arbol de directorios y 
 	 * 	revisando si son .txt
 	 */
 
-	int i_, kk;
+	int i_, n_paths;
 	pair *visited; 
 	char **paths; 
 	DIR *dir; 
@@ -164,27 +166,41 @@ int myFind (char *dirname) { /* POR AHORA:
 	}
 	else { 
 		dir = opendir(dirname); 
-		kk = traverseDir(dir, dirname, &inodes, paths, 0); 
+		n_paths = traverseDir(dir, dirname, &inodes, paths, 0); 
 	}
 
+	printf("n_paths %d\n",n_paths); 
+	  /* Paths de los archivos encontrados   */
+	/*for(i_=0; i_<n_paths; i_++)   */
+		/*printf("%s\n",paths[i_]);   */
 
+
+
+	/*frees*/
+	for(i_=0; i_<n_paths; i_++)   
+		free(paths[i_]);
+	free(paths);
+
+
+	printf("Current size %d\n",inodes.size);
+	printf("Current capacity %d\n",inodes.capacity); 
+	printf("Number of words inserted %d\n",inodes.n_words);
+	exit(1);
+}
+
+	/* DGB for trie 
 	visited = (pair *) malloc( sizeof(pair) * inodes.size) ; 
 	for(i_=0; i_<inodes.size; i_++) {
 		visited[i_].first = -1; 
-		visited[i_].second = 0 ;
+		visited[i_].second = -1 ;
 	}
+	visited[0].first = 0;
 
 	trieDfs(&inodes, visited, 0, inodes.root); 
-	trieDfsRec(visited, inodes.size ); 
+	trieDfsRec(visited, inodes.size );  
 
-
-
-	/* Paths de los archivos encontrados */
-	for(i_=0; i_<kk; i_++)
-		printf("%s\n",paths[i_]);
-	
-	free(paths);
-
-	return 0; 
-}
+	printf("Current size %d\n",inodes.size);
+	printf("Current capacity %d\n",inodes.capacity); 
+	printf("Number of words inserted %d\n",inodes.n_words);
+	*/
 
