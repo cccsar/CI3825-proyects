@@ -1,17 +1,20 @@
 
 OPTS=-ansi -g -Wpedantic
 
-root: main.o trie.o myFind.o
-	gcc ${OPTS} -o root main.o trie.o myFind.o
+root: main.o  myFind.o hasht.o singly.o
+	gcc ${OPTS} -o root main.o myFind.o hasht.o singly.o
 
-main.o: main.c myFind.h trie.h
+main.o: main.c myFind.h 
 	gcc ${OPTS} -c main.c 
 
-myFind.o: myFind.c myFind.h trie.h
+myFind.o: myFind.c myFind.h hasht.h
 	gcc ${OPTS} -c myFind.c
 
-trie.o: trie.c trie.h
-	gcc ${OPTS} -c trie.c	
+hasht.o: hasht.c hasht.h singly.h
+	gcc ${OPTS} -c hasht.c
+
+singly.o: singly.c singly.h
+	gcc ${OPTS} -c singly.c
 
 clean:
-	rm -rfv *.o root
+	rm -rfv *.o root 

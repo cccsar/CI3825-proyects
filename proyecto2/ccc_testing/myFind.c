@@ -18,13 +18,13 @@
 #include <string.h> 
 #include <unistd.h>
 #include <string.h>
-#include "trie.h"
+#include "hasht.h"
 
 #define TRUE 1
 #define FALSE 0
 #define MAX_PATHNAME 5000
 #define INODE_SIZE 20
-#define MAX_FILES 200
+#define MAX_FILES 2000
 
 
 /* isTxt
@@ -53,7 +53,7 @@ int isTxt(char *name) {
  *
  *
  */
-int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) { 
+int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) { 
 
 	int len, term, help; 
 	char path[MAX_PATHNAME], pathname[MAX_PATHNAME], curr_inode[INODE_SIZE]; 
@@ -82,40 +82,26 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
 			
-			/* Verifica que la entrada revisada sea un directorio
-			 * Si lo es: 
-			 * 	lo recorre
-			 * de lo contrario 
-			 * 	revisa el sufijo del nombre:
-			 * 	Si es .txt:
-			 * 		si no esta registrado el inodo asociado:
-			 * 			lo guarda
-			 * 		de lo contrario:
-			 * 			lo ignora
-			 * 	de lo contrario:
-			 * 		lo ignora
-			 */
+
 			if ( S_ISREG(current_st.st_mode) || S_ISLNK(current_st.st_mode) )  {
 
 				/*esto podria ser una funcion###*/
 				if (isTxt(current_ent->d_name)) {
 
-					/* utilizar mejor lectura/escritura segura ###*/
-					sprintf(curr_inode,"%ld",current_st.st_ino); 
-
-					if( trieInsert(inodes, curr_inode) == TRUE )  {
+					if( hashtInsert(inodes, current_st.st_ino) == TRUE )  {
 						/*pido el espacio exacto para cada string*/
-						paths[ind + term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
+						paths[ind+term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
 						/*copio el string, puede traer problemas###*/
 						strcpy(paths[ind+term],pathname);
-						term += 1; 
+						term++;
 					}	
 				}
 			}
 			else if ( S_ISDIR(current_st.st_mode) ) {
 			  	curr_dir = opendir(pathname); 
 
-			 	help +=traverseDir(curr_dir, pathname, inodes, paths, ind + term); 
+				/*esto resolvio el problema de la acumularcion*/
+			 	term +=traverseDir(curr_dir, pathname, inodes, paths, ind + term ); 
 
 				closedir(curr_dir);
 			}
@@ -123,7 +109,7 @@ int traverseDir(DIR *dir, char *dirname, trie *inodes, char** paths, int ind) {
 		}
 	}
 
-	help += ind+term; 
+	help += term;
 	return help;  
 }
 
@@ -146,15 +132,14 @@ int myFind (char *dirname) { /* POR AHORA:
 	 */
 
 	int i_, n_paths;
-	pair *visited; 
 	char **paths; 
 	DIR *dir; 
 	struct stat d_stat; 	
-	trie inodes; 
+	hasht inodes; 
 
-	/* se asume maximo de archivos por ahora */
+	/* se asume maximo de archivos por ahora ###*/
 	paths = (char **) malloc( sizeof(char*) * MAX_FILES ); 
-	trieInit(&inodes); 
+	hashtInit(inodes); 
 
 	if ( stat(dirname, &d_stat) == -1 )
 		perror("stat"); 
@@ -166,41 +151,23 @@ int myFind (char *dirname) { /* POR AHORA:
 	}
 	else { 
 		dir = opendir(dirname); 
-		n_paths = traverseDir(dir, dirname, &inodes, paths, 0); 
+		n_paths = traverseDir(dir, dirname, inodes, paths, 0); 
 	}
 
 	printf("n_paths %d\n",n_paths); 
 	  /* Paths de los archivos encontrados   */
-	/*for(i_=0; i_<n_paths; i_++)   */
-		/*printf("%s\n",paths[i_]);   */
+	for(i_=0; i_<n_paths; i_++)   
+		printf("%s\n",paths[i_]);   
 
 
 
 	/*frees*/
+	hashtDestroy(inodes);
 	for(i_=0; i_<n_paths; i_++)   
 		free(paths[i_]);
 	free(paths);
 
 
-	printf("Current size %d\n",inodes.size);
-	printf("Current capacity %d\n",inodes.capacity); 
-	printf("Number of words inserted %d\n",inodes.n_words);
-	exit(1);
 }
 
-	/* DGB for trie 
-	visited = (pair *) malloc( sizeof(pair) * inodes.size) ; 
-	for(i_=0; i_<inodes.size; i_++) {
-		visited[i_].first = -1; 
-		visited[i_].second = -1 ;
-	}
-	visited[0].first = 0;
-
-	trieDfs(&inodes, visited, 0, inodes.root); 
-	trieDfsRec(visited, inodes.size );  
-
-	printf("Current size %d\n",inodes.size);
-	printf("Current capacity %d\n",inodes.capacity); 
-	printf("Number of words inserted %d\n",inodes.n_words);
-	*/
 
