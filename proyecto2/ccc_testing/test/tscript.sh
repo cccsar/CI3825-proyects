@@ -10,6 +10,8 @@ elif [ "$1" = "hard" ] ; then
 	hard $2 ;
 elif [ "$1" = "links" ] ; then
 	links ;
+elif [ "$1" = "xiao" ] ; then
+	xiao;
 fi
 
 function easy() {
@@ -58,3 +60,4 @@ function links() {
 		ln 1.txt $i; 
 	done
 }
+

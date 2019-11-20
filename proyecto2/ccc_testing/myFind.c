@@ -24,7 +24,7 @@
 #define FALSE 0
 #define MAX_PATHNAME 5000
 #define INODE_SIZE 20
-#define MAX_FILES 2000
+#define MAX_FILES 419
 
 
 /* isTxt
@@ -109,6 +109,7 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 		}
 	}
 
+
 	help += term;
 	return help;  
 }
@@ -126,19 +127,16 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
  *
  * Retorna >0 si hay error, 1 en caso de exito
  */
-int myFind (char *dirname) { /* POR AHORA: 
-	 * 	solo funciona buscando archivos en un arbol de directorios y 
-	 * 	revisando si son .txt
-	 */
+int myFind (char *dirname, char **paths) { 
 
 	int i_, n_paths;
-	char **paths; 
+	/*char **paths; */
 	DIR *dir; 
 	struct stat d_stat; 	
 	hasht inodes; 
 
 	/* se asume maximo de archivos por ahora ###*/
-	paths = (char **) malloc( sizeof(char*) * MAX_FILES ); 
+	/*paths = (char **) malloc( sizeof(char*) * MAX_FILES ); */
 	hashtInit(inodes); 
 
 	if ( stat(dirname, &d_stat) == -1 )
@@ -159,7 +157,8 @@ int myFind (char *dirname) { /* POR AHORA:
 	for(i_=0; i_<n_paths; i_++)   
 		printf("%s\n",paths[i_]);   
 
-
+	/*pilas*/
+	return n_paths;
 
 	/*frees*/
 	hashtDestroy(inodes);

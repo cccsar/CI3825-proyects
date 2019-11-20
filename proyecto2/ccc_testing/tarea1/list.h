@@ -110,6 +110,6 @@ void listSort(list *l);
  *
  * 	l: lista a imprimir
  */
-void listPrint(list l);
+void listPrint(list l, int fd);
 
 #endif

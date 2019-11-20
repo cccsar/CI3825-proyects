@@ -14,6 +14,7 @@
 
 #include "hasht.h"
 
+
 /* isTxt
  * --------------
  *
@@ -35,6 +36,5 @@ void traverseDir(DIR *dir, char *dirname, hasht *inodes, char* paths, int ind) ;
  *
  *
  */
-int myFind (char *dirname) ; 
-
+int myFind (char *dirname, char** Paths) ; 
 #endif

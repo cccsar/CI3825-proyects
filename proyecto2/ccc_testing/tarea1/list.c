@@ -190,7 +190,7 @@ void listSort(list *l) {
  *
  * 	l: lista a imprimir
  */
-void listPrint(list l) {
+void listPrint(list l, int fd) {
 
 	if (l.size==0) 
 		printf("Empty list\n"); 
@@ -200,7 +200,9 @@ void listPrint(list l) {
 		
 		while (dummie != NULL ) { 
 
-			printf("%s %d \n",dummie->word,dummie->frequency); 
+			/*printf("%s %d \n",dummie->word,dummie->frequency); */
+			/*implementacion que usa file descriptors*/
+			dprintf(fd,"%d",dummie->word,dummie->frequency);
 			if (l.head == l.tail) 
 				break ;
 			dummie = dummie->next;

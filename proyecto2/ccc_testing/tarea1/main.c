@@ -12,13 +12,9 @@
 
 #include <stdio.h> 
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h> 
-#include <fcntl.h> 
 #include "list.h"
 
 #define WORD_SIZE 20
-#define MAX_FILES 2000
 
 /* Funcion memoryError
  * -------
@@ -31,36 +27,27 @@ void memoryError() {
 int main (int argc, char **argv) { 
 
 	FILE *fp; 
-	int i,j;  
-	int fd[MAX_FILES]; 
+	int i,j, fd;
 	char *current_word;
 	node *space;
 	list *my_list;
 
-	if (argc != atoi(argv[1]) + 2) 
-	{ 
+	/*argv[1] ahora es el file descriptor de un pipe*/
+	if (argc != atoi(argv[2]) + 3) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
 			" {lista de nombre de archivos}\n"); 
 		exit(-1); 
 	}
 
  	my_list = (list*) malloc( sizeof(list) );
-	if (!my_list)
-	{
+	if (!my_list) {
 		memoryError();
 		exit(-2);
 	}
 	listInit(my_list);
 
-	for(i=2; i<atoi(argv[1])+2; i++) {
-
+	for(i=2; i<atoi(argv[2])+2; i++) { 
 		fp = fopen(argv[i],"r"); 
-		fd = open(argv[i], O_RDONLY, );
-
-		if (fd == -1) { 
-			perror("Error abriendo archivo\n"); 
-			exit(-3);
-		}
 
 		if (!fp ) { 
 			perror("Error abriendo archivo\n"); 
@@ -102,15 +89,14 @@ int main (int argc, char **argv) {
 
 		}
 
-		close(fd); 
-
 
 	} 
 
 	listSort(my_list);	
-	listPrint(*my_list);
+	/*ahora esto escribe al file descriptor del pipe*/
+	listPrint(*my_list, atoi(argv[1]) );
 
-	free(my_list); 
+	free(my_list);
 
 	exit(0);
 }
