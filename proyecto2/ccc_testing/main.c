@@ -24,11 +24,13 @@
 #define FALSE 0
 
 #define MAX_PATH 5000
-#define MAX_FD 20
+#define MAX_PS 20
 #define MAX_FILES 419
+
 #define FREECPAL 8
 #define FD_DIGITS 5
 #define FILES_DIGITS 10 
+#define NAME "freecpal"
 
 #define MIN(a,b) (a < b)? a: b;
 
@@ -37,7 +39,7 @@ char** getSlice(char** paths, int this, int hm) {
 	int i_;
 	char **new; 
 	
-	new = (char**) malloc( sizeof(char*) * (this + 3) );
+	new = (char**) malloc( sizeof(char*) * (this + 4) );
 	
 	/*reservo espacio para el nombre del ejecutable*/
 	new[0] = (char *) malloc( sizeof(char) * FREECPAL );
@@ -45,10 +47,12 @@ char** getSlice(char** paths, int this, int hm) {
 	new[1] = (char *) malloc( sizeof(char) * FD_DIGITS) ;
 	/*reservo espacio para el numero de archivos*/
 	new[2] = (char *) malloc( sizeof(char) * FILES_DIGITS );
-
+	/*asigno el null pointer final*/
+	new[this + 3] = (char*) NULL; 
 	/*aqui incluyo cada pathname*/
+
 	for(i_=0; i_<this-3 ; i_++) {
-		new[i_+3]= (char *) malloc( sizeof(char)* strlen(paths[hm + i_]);
+		new[i_+3]= (char *) malloc( sizeof(char)* strlen(paths[hm + i_]) );
 		strcpy(new[i_], paths[hm + i_]);
 	}
 
@@ -56,8 +60,8 @@ char** getSlice(char** paths, int this, int hm) {
 }
 
 int main (int argc, char **argv) { 
-	int n_files, i_, fd_tw, ub, quot;
-	int pid[MAX_FD]; 
+	int n_files, i_, fd_tw, ub, quot, rem ;
+	int pid[MAX_PS], status[MAX_PS]; 
 	char **paths; 
 	char **help;
 
@@ -65,6 +69,7 @@ int main (int argc, char **argv) {
 	fd_tw = open("destiny", O_WRONLY | O_CREAT | O_APPEND); /*perror*/
 
 	/*consigo los archivos*/
+	/*n_files = myFind(argv[2], paths); Esto se pone cuando funcione */
 	n_files = myFind(argv[1], paths); 
 
 	/*hasta aqui funciona*/
@@ -74,7 +79,8 @@ int main (int argc, char **argv) {
 	if ( atoi(argv[1]) >= n_files ) {
 		/*si el numero de procesos es mayor que el numero de archivos*/
 		/*entonces 1 - 1*/
-
+		quot = 1; 
+		rem = 0;
 	}
 	else {
 		/*si el numero de archivos es mayor al numero de procesos*/
@@ -84,24 +90,34 @@ int main (int argc, char **argv) {
 	}
 
 
+
 	ub = MIN( atoi(argv[1]), n_files);
 
 	/*creo los procesos*/
 	for(i_=0; i_< ub ; i_++) {
 		pid[i_] = fork(); /*perror*/	
 		
-		if ( fd[i_] == 0 ) {
+
+		if ( pid[i_] == 0 ) {
 			/*ver como mierdas le pasas el fd de salida a freecpal*/
-			if (i_ != ub - 1)
-				help = getslice(paths, quot, quot*i_ );
+			if (i_ != ub - 1) 
+				help =  getslice(paths, quot, quot*i_ );
 			else
-				help = getslice(paths, quot + rem, quot*i_);
+				help =  getslice(paths, quot + rem, quot*i_);
+			help[0] = NAME;
+			/*pasar file descriptor de escritura a string*/
+			help[1] = (char*) NULL ;
+			/*pasar numero de archivos a string*/
+			help[2] = (char*) NULL ;
 
 			execv(help[0], help); 
 		}
 	}
 
+	for (i_=0 ; i_<ub ; i_++) { 
+		waitpid(-1,status[i_],0);  
+	}
 	
-	eturn 0; 
+	return 0; 
 }
 
