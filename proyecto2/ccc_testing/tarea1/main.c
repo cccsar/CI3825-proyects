@@ -32,7 +32,9 @@ int main (int argc, char **argv) {
 	node *space;
 	list *my_list;
 
+	printf("%s %s %s %s\n",argv[1], argv[2], argv[3], argv[4]);
 	/*argv[1] ahora es el file descriptor de un pipe*/
+	/*y argv[2] es el numero de archivos*/
 	if (argc != atoi(argv[2]) + 3) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
 			" {lista de nombre de archivos}\n"); 
@@ -47,10 +49,9 @@ int main (int argc, char **argv) {
 	listInit(my_list);
 
 	for(i=2; i<atoi(argv[2])+2; i++) { 
-		fp = fopen(argv[i],"r"); 
-
-		if (!fp ) { 
-			perror("Error abriendo archivo\n"); 
+		if (!(fp = fopen(argv[i],"r")) ){
+			dprintf(stderr, "%s",argv[i]);
+			perror("fopen"); 
 			exit(-3); 
 		}
 

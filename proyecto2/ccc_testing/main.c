@@ -27,97 +27,109 @@
 #define MAX_PS 20
 #define MAX_FILES 419
 
-#define FREECPAL 8
+#define MODE S_IRWXU | S_IRGRP | S_IROTH 
+
 #define FD_DIGITS 5
 #define FILES_DIGITS 10 
+#define MAX_DIGITS 20
 #define NAME "freecpal"
+#define FREECPAL 8
 
 #define MIN(a,b) (a < b)? a: b;
 
+int intToString(char* arr, int a, int *i) { 
 
-char** getSlice(char** paths, int this, int hm) {
-	int i_;
-	char **new; 
-	
-	new = (char**) malloc( sizeof(char*) * (this + 4) );
-	
-	/*reservo espacio para el nombre del ejecutable*/
-	new[0] = (char *) malloc( sizeof(char) * FREECPAL );
-	/*reservo espacio para el file descriptor de escritura*/
-	new[1] = (char *) malloc( sizeof(char) * FD_DIGITS) ;
-	/*reservo espacio para el numero de archivos*/
-	new[2] = (char *) malloc( sizeof(char) * FILES_DIGITS );
-	/*asigno el null pointer final*/
-	new[this + 3] = (char*) NULL; 
-	/*aqui incluyo cada pathname*/
-
-	for(i_=0; i_<this-3 ; i_++) {
-		new[i_+3]= (char *) malloc( sizeof(char)* strlen(paths[hm + i_]) );
-		strcpy(new[i_], paths[hm + i_]);
+	if( a/10 != 0 )  {
+		*i = intToString(arr, a/10, i) ;
+		arr[*i] = a%(10) + 48; 
 	}
+	else   
+		arr[*i] = a + 48;
 
-	return new;
+	*i += 1;
+
+	return *i; 
 }
 
+void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
+	int i_;
+	
+	/*tamano del slice tiene que ser una ctte grande*/
+	
+	argl[0] = NAME;
+	argl[slice_size + 3] =  NULL; 
+
+	argl[1] = (char *) malloc( sizeof(char) * MAX_DIGITS) ;
+	argl[2] = (char *) malloc( sizeof(char) * MAX_DIGITS );
+
+	for(i_=3; i_<slice_size+3 ; i_++) {
+		argl[i_]= (char *) malloc( sizeof(char)* strlen(paths[acummulated + i_ - 3]) );
+		strcpy(argl[i_], paths[acummulated + i_ - 3]);
+	}
+
+}
+
+
 int main (int argc, char **argv) { 
-	int n_files, i_, fd_tw, ub, quot, rem ;
+	int n_files, i_, fd_tw, ub, quot, rem, p, aux;
 	int pid[MAX_PS], status[MAX_PS]; 
-	char **paths; 
-	char **help;
+	char **paths, **help;
+	char *buff;
 
 	paths = (char**) malloc(sizeof(char*)*MAX_FILES); /*perror*/
-	fd_tw = open("destiny", O_WRONLY | O_CREAT | O_APPEND); /*perror*/
+	fd_tw = open("destiny", O_WRONLY | O_CREAT | O_TRUNC | O_APPEND, MODE); /*perror*/
 
 	/*consigo los archivos*/
-	/*n_files = myFind(argv[2], paths); Esto se pone cuando funcione */
-	n_files = myFind(argv[1], paths); 
+	n_files = myFind(argv[2], paths); 
+	/*n_files = myFind(argv[1], paths); */
 
-	/*hasta aqui funciona*/
-	return 0;
 
-	/*calculo cuantos archivos le paso a cada proceso*/
 	if ( atoi(argv[1]) >= n_files ) {
-		/*si el numero de procesos es mayor que el numero de archivos*/
-		/*entonces 1 - 1*/
 		quot = 1; 
 		rem = 0;
 	}
 	else {
-		/*si el numero de archivos es mayor al numero de procesos*/
-		/*divide and conquer ###*/
-		quot = atoi(argv[1]) / n_files;
-		rem = atoi(argv[1]) % n_files;
+		quot = n_files / atoi(argv[1]) ;
+		rem = n_files % atoi(argv[1]) ;
 	}
-
 
 
 	ub = MIN( atoi(argv[1]), n_files);
 
-	/*creo los procesos*/
+
 	for(i_=0; i_< ub ; i_++) {
 		pid[i_] = fork(); /*perror*/	
 		
 
 		if ( pid[i_] == 0 ) {
-			/*ver como mierdas le pasas el fd de salida a freecpal*/
-			if (i_ != ub - 1) 
-				help =  getslice(paths, quot, quot*i_ );
-			else
-				help =  getslice(paths, quot + rem, quot*i_);
-			help[0] = NAME;
-			/*pasar file descriptor de escritura a string*/
-			help[1] = (char*) NULL ;
-			/*pasar numero de archivos a string*/
-			help[2] = (char*) NULL ;
 
+			help = (char* *) malloc( sizeof(char*) * (quot + 4) );
+
+			aux = (i_ != ub-1)? quot: quot + rem; 
+
+			getSlice(help, paths, aux, quot*i_);
+
+			p = 0;
+			p = intToString(help[1],fd_tw, &p); 
+			help[1][p] = '\0';
+
+			p = 0;
+			p = intToString(help[2], quot, &p);
+			help[2][p] = '\0';
+			
 			execv(help[0], help); 
 		}
 	}
 
+
 	for (i_=0 ; i_<ub ; i_++) { 
 		waitpid(-1,status[i_],0);  
 	}
-	
+
+
+	/*HAZ FREE*/
+
 	return 0; 
 }
+
 
