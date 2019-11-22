@@ -71,8 +71,8 @@ void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 
 
 int main (int argc, char **argv) { 
-	int n_files, i_, fd_tw, ub, quot, rem, p, aux;
-	int pid[MAX_PS], status[MAX_PS]; 
+	int n_files, i_, fd_tw, ub, quot, rem, p, aux, n_ps;
+	int pid[MAX_PS], status[MAX_PS], counts[2]; 
 	char **paths, **help;
 	char *buff;
 
@@ -81,6 +81,7 @@ int main (int argc, char **argv) {
 
 	/*consigo los archivos*/
 	n_files = myFind(argv[2], paths); 
+	n_ps = atoi(argv[1]);
 	/*n_files = myFind(argv[1], paths); */
 
 
@@ -103,31 +104,37 @@ int main (int argc, char **argv) {
 
 		if ( pid[i_] == 0 ) {
 
-			help = (char* *) malloc( sizeof(char*) * (quot + 4) );
+			/*esto funcion pero ser ve horrible aaaaaaaah ###*/
+			/*no se como hacer free de algo que se envia por exec :(*/
+			help = (char**) malloc( sizeof(char*) * (quot + 4) );
 
 			aux = (i_ != ub-1)? quot: quot + rem; 
 
 			getSlice(help, paths, aux, quot*i_);
 
 			p = 0;
-			p = intToString(help[1],fd_tw, &p); 
+			p = intToString(help[1] , fd_tw, &p); 
 			help[1][p] = '\0';
 
 			p = 0;
 			p = intToString(help[2], quot, &p);
 			help[2][p] = '\0';
 			
+
 			execv(help[0], help); 
+			perror("execv");
 		}
 	}
 
 
-	for (i_=0 ; i_<ub ; i_++) { 
+	for (i_=0 ; i_<ub ; i_++)  
 		waitpid(-1,status[i_],0);  
-	}
 
 
 	/*HAZ FREE*/
+	for(i_=0; i_<n_paths ; i_++) 
+		free(pahts[i_];
+	free(paths);
 
 	return 0; 
 }

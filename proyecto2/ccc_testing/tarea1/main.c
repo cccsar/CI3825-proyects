@@ -48,7 +48,7 @@ int main (int argc, char **argv) {
 	}
 	listInit(my_list);
 
-	for(i=2; i<atoi(argv[2])+2; i++) { 
+	for(i=3; i < atoi(argv[2])+3; i++) { 
 		if (!(fp = fopen(argv[i],"r")) ){
 			dprintf(stderr, "%s",argv[i]);
 			perror("fopen"); 

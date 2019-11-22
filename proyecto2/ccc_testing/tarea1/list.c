@@ -22,7 +22,7 @@
 void nodeInit(node *e, char* c) {
 	e->next = NULL; 
 	e->prev = NULL;
-	e->frequency = 0;
+	e->frequency = 1;
 	e->word = c;
 }
 
@@ -111,27 +111,27 @@ int listInsert(list *l, node *e) {
 	{
 		l->head = e; 
 		l->tail = e;
-		e->frequency++;
+		/*e->frequency++;*/
 
-		l->size++; 
 	}
 	else {
 		node *contains = listSearch(l, e); 
 		
 		if (contains != NULL) 
 		{
-			contains->frequency++;	
+			/*contains->frequency++;	*/
+			contains->frequency += e->frequency; 
 			return -1;
 		}
 		else {
 			(l->tail)->next = e; 
 			e->prev = l->tail; 
 			l->tail = e; 
-			e->frequency++; 
+			/*e->frequency++; */
 
-			l->size++; 
 		}
 	}
+	l->size++; 
 
 	return 1;
 }
@@ -202,7 +202,7 @@ void listPrint(list l, int fd) {
 
 			/*printf("%s %d \n",dummie->word,dummie->frequency); */
 			/*implementacion que usa file descriptors*/
-			dprintf(fd,"%d",dummie->word,dummie->frequency);
+			dprintf(fd,"%s %d",dummie->word,dummie->frequency);
 			if (l.head == l.tail) 
 				break ;
 			dummie = dummie->next;
