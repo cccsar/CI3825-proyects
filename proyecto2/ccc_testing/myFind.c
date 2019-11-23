@@ -152,10 +152,10 @@ int myFind (char *dirname, char **paths) {
 		n_paths = traverseDir(dir, dirname, inodes, paths, 0); 
 	}
 
-	printf("n_paths %d\n",n_paths); 
+	/*printf("n_paths %d\n",n_paths); */
 	  /* Paths de los archivos encontrados   */
-	for(i_=0; i_<n_paths; i_++)   
-		printf("%s\n",paths[i_]);   
+	/*for(i_=0; i_<n_paths; i_++)   */
+		/*printf("%s\n",paths[i_]);   */
 
 	/*pilas*/
 	return n_paths;

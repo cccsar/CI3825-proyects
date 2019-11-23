@@ -1,11 +1,11 @@
 
 OPTS=-ansi -g -Wpedantic
 
-root: main.o  myFind.o hasht.o singly.o
-	gcc ${OPTS} -o root main.o myFind.o hasht.o singly.o
+freecpalproc: main.o  myFind.o hasht.o singly.o list.o
+	gcc ${OPTS} -o freecpalproc main.o myFind.o hasht.o singly.o list.o -lpthread
 
-main.o: main.c myFind.h 
-	gcc ${OPTS} -c main.c 
+main.o: main.c myFind.h list.h
+	gcc ${OPTS} -c main.c -lpthread 
 
 myFind.o: myFind.c myFind.h hasht.h
 	gcc ${OPTS} -c myFind.c
@@ -16,5 +16,8 @@ hasht.o: hasht.c hasht.h singly.h
 singly.o: singly.c singly.h
 	gcc ${OPTS} -c singly.c
 
+list.o: list.c list.h
+	gcc ${OPTS} -c list.c
+
 clean:
-	rm -rfv *.o root 
+	rm -rfv *.o freecpalproc freecpal

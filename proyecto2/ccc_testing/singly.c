@@ -49,9 +49,7 @@ void singlyDestroy(singly *l_) {
 	int i_; 
 	snode *killed, *dummie; 
 
-	if (l_->size > 1) {
-	}
-	else  {
+	if (l_->size >= 1 ) {
 		killed = l_->head;
 		dummie = killed->next;
 		while( dummie != (snode*) NULL ) {
