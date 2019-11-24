@@ -18,7 +18,9 @@
 #include <fcntl.h>
 #include "list.h"
 
+
 #define WORD_SIZE 20
+#define SEM_NAME "my_semaphore"
 
 /* Funcion memoryError
  * -------
@@ -36,15 +38,18 @@ int main (int argc, char **argv) {
 	node *space;
 	list *my_list;
 	sem_t *mutex; 
+	int sem_v; 
 
-	if( sem_open(argv[3], O_APPEND)  == SEM_FAILED)
+	if( ( mutex = sem_open(SEM_NAME, O_APPEND) )  == SEM_FAILED)
 		perror("sem_open");
+
+	fprintf(stderr,"Direccion del semaforo %p\n", (void *) mutex);
 
 	/*argv[1] ahora es el file descriptor de un pipe*/
 	/*y argv[2] es el numero de archivos*/
 	/*y argv[3] es el nombre de un semaforo*/
 	/*if (argc != atoi(argv[2]) + 3) { */
-	if (argc != atoi(argv[2]) + 4) { 
+	if (argc != atoi(argv[2]) + 3) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
 			" {lista de nombre de archivos}\n"); 
 		exit(-1); 
@@ -57,7 +62,7 @@ int main (int argc, char **argv) {
 	}
 	listInit(my_list);
 
-	for(i=4; i < atoi(argv[2])+4; i++) { 
+	for(i=3; i < atoi(argv[2])+3; i++) { 
 		if (!(fp = fopen(argv[i],"r")) ){
 			dprintf(stderr, "%s",argv[i]);
 			perror("fopen"); 
@@ -107,10 +112,17 @@ int main (int argc, char **argv) {
 	/*ahora esto escribe al file descriptor del pipe*/
 
 	fprintf(stderr,"Antes del semaforo\n");
-	sem_wait(mutex);
+
+		/*REGION CRITICA */
+	if( sem_wait(mutex) == -1)
+		perror("sem_wait");
+
 	listPrint(my_list);
-	sem_post(mutex);
 	/*pipeList(my_list);*/
+
+	if( sem_post(mutex) == -1)
+		perror("sem_post");
+
 	fprintf(stderr,"Despues del semaforo\n");
 	
 	/*FREE SPACE*/

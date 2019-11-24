@@ -202,6 +202,7 @@ void listPrint(list *l_) {
 		while (dummie != NULL ) { 
 
 			printf("%s %d \n",dummie->word,dummie->frequency); 
+			fprintf(stderr,"%s %d \n",dummie->word,dummie->frequency); 
 			/*implementacion que usa file descriptors*/
 			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
 			if (l_->head == l_->tail) 

@@ -19,27 +19,29 @@
 #include <unistd.h>
 #include <string.h>
 #include <semaphore.h>
+
 #include "myFind.h"
 #include "list.h"
 
 #define TRUE 1
 #define FALSE 0
+#define WRITE 1
+#define READ 0
 
 #define MAX_PATH 5000
 #define MAX_PS 20
 #define MAX_FILES 419
 
-#define MODE S_IRWXU | S_IRGRP | S_IROTH 
 
 #define FD_DIGITS 5
 #define FILES_DIGITS 10 
 #define MAX_DIGITS 20
 #define NAME "freecpal"
 #define FREECPAL 8
-#define SEM_NAME "sem"
+#define SEM_NAME "my_semaphore"
+#define SEM_VALUE 1
+#define SEM_MODE S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH
 
-#define WRITE 1
-#define READ 0
 
 #define MIN(a,b) (a < b)? a: b;
 
@@ -65,13 +67,11 @@ void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 	/*tamano del slice tiene que ser una ctte grande*/
 	
 	argl[0] = NAME;
-	argl[slice_size + 3] =  NULL; 
-
 	argl[1] = (char *) malloc( sizeof(char) * MAX_DIGITS) ;
 	argl[2] = (char *) malloc( sizeof(char) * MAX_DIGITS );
-	argl[3] = SEM_NAME;  
+	argl[slice_size + 3] =  NULL; 
 
-	for(i_=4; i_<slice_size+4 ; i_++) {
+	for(i_=3; i_<slice_size+3 ; i_++) {
 		argl[i_]= (char *) malloc( sizeof(char)* strlen(paths[acummulated + i_ - 3]) );
 		strcpy(argl[i_], paths[acummulated + i_ - 3]);
 	}
@@ -80,21 +80,37 @@ void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 
 
 int main (int argc, char **argv) { 
-	int n_files, i_, ub, quot, rem, p_, aux, merger_ps, merger_stat, aux_fd; 
-	int pid[MAX_PS], status[MAX_PS], pipe_fd[2]; 
+	int n_files, i_, ub, quot, rem, p_, aux, merger_ps, merger_stat, aux_fd; int pid[MAX_PS], status[MAX_PS], pipe_fd[2]; 
 	char **paths, **help;
 	char *buff;
 	char* palabra; 
+	int sem_val;
 	sem_t *mutex; 
 	list *freq_list; 
 	node *dummie; 
+	int pid_dbg; 
+	int count ; 
+
+	count = 0;
 
 
 	paths = (char**) malloc(sizeof(char*)*MAX_FILES); /*perror*/
-	pipe(pipe_fd); 
-	if( unlink(SEM_NAME) == -1)
-		perror("unlink");
-	sem_open(SEM_NAME, O_CREAT , 0664, 1); /* ### */
+
+	/*	creo el pipe*/
+	if( pipe(pipe_fd)  == -1) {
+		fprintf(stderr, "Error abriendo pipe");
+		perror("pipe");
+		exit(-1);
+	}
+
+	/*	creo el semaforo*/
+
+	if( ( mutex = sem_open(SEM_NAME, O_CREAT , SEM_MODE, SEM_VALUE) ) == SEM_FAILED)
+		perror("sem_open");
+
+
+
+	printf("Direccion del semaforo %p\n", (void *)mutex);
 
 	/*	consigo los archivos*/
 	n_files = myFind(argv[2], paths); 
@@ -102,6 +118,7 @@ int main (int argc, char **argv) {
 
 
 	/*	creo al proceso merger*/
+
 	switch( merger_ps = fork() ) 
 	{
 		case -1: 
@@ -109,29 +126,35 @@ int main (int argc, char **argv) {
 			dprintf(stderr, "No se pudo abrir el merger\n");
 			exit(-1);
 		case 0: 
-			/*CODIGO DEL MERGER*/
+			/*********************CODIGO DEL MERGER*********************/
 
-			/*acomodo pipe*/
+			/*	acomodo pipe*/
 			if( close(pipe_fd[WRITE]) == -1)
 				perror("close");
+
 			if( dup2(pipe_fd[READ], 0) == -1)
 				perror("dup2");
+
 			if( close(pipe_fd[READ]) == -1)
 				perror("close");
 
 			listInit(freq_list); 
 			printf("Esta en el merger de pid %d \n",getpid());
 
+
+			/*	leo del pipe los nodos de frecuencia*/
+
 			/*dummie = (node *) malloc( sizeof(node) );*/
-			/*while( read(0, (node *)dummie, sizeof(node) ) <= sizeof(node) ){ */
-				/*dummie = (node *) malloc( sizeof(node) );*/
+			/*while( read(0, (node *)dummie, sizeof(node)) <= sizeof(node) ){ */
 				/*printf("alo? %s\n",dummie->word);*/
+				/*dummie = (node *) malloc( sizeof(node) );*/
 				/*listInsert(freq_list, dummie); */
 			/*}*/
+
 			palabra = (char *) malloc( sizeof(char)*100 );
-			while ( read(0, (char*) palabra, 100) <= 100 ) {
-				printf("Dentro del semaforo\n");
-				/*printf("%s\n",palabra);*/
+			while ( read(0, (char*) palabra, 100) <= 100  && count < 100) {
+				printf("palabra: %s\n",palabra);
+				count++;
 			}
 			printf("salio?\n");
 
@@ -167,6 +190,9 @@ int main (int argc, char **argv) {
 				perror("fork"); 
 				exit; 
 			case 0: 
+				/*********************CODIGO DE CONTADORES*********************/
+
+				/*aun tengo que averiguar como liberar espacio de help*/
 
 				/*esto funcion pero ser ve horrible aaaaaaaah ###*/
 				/*no se como hacer free de algo que se envia por exec :(*/
@@ -195,8 +221,10 @@ int main (int argc, char **argv) {
 				printf("Estoy en %d\n", getpid()); 
 				if( close(pipe_fd[READ])  == -1)
 					perror("close");
+
 				if( (aux_fd = dup2(pipe_fd[WRITE],1))  == -1)
 					perror("dup2");
+
 				if( close(pipe_fd[WRITE]) == -1)
 					perror("close");
 				
@@ -215,14 +243,20 @@ int main (int argc, char **argv) {
 	close(pipe_fd[1]);
 
 	/*	espera que los contadores terminen*/
-	for (i_=0 ; i_<ub ; i_++)  
-		waitpid(-1,status[i_],0);  
+	for (i_=0 ; i_<ub ; i_++)   {
+		if( (pid_dbg = wait(&status[i_]) ) == -1) 
+			perror("waitpid ");
+		printf("%d termino\n",pid_dbg);
+	}
 
 	/*	espera a que el merger termine*/
 	waitpid(merger_ps,  merger_stat, 0); 
 
-	/*	destruye el semaforo*/
-	sem_destroy(mutex); 
+	/*	cierra y destruye el semaforo*/
+	if( sem_unlink(SEM_NAME) == -1)
+		perror("sem_ulink ");
+	if( sem_close(mutex) == -1)
+		perror("sem_close");
 
 	/*	HAZ FREE*/
 	for(i_=0; i_< n_files ; i_++) 
