@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "list.h"
 
 
@@ -45,11 +46,12 @@ int main (int argc, char **argv) {
 
 	fprintf(stderr,"Direccion del semaforo %p\n", (void *) mutex);
 
+	fprintf(stderr,"%s %s %s %s\n",argv[1] ,argv[2],argv[3],argv[4]);
 	/*argv[1] ahora es el file descriptor de un pipe*/
 	/*y argv[2] es el numero de archivos*/
 	/*y argv[3] es el nombre de un semaforo*/
-	/*if (argc != atoi(argv[2]) + 3) { */
-	if (argc != atoi(argv[2]) + 3) { 
+
+	if (argc != atoi(argv[2]) + 4) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
 			" {lista de nombre de archivos}\n"); 
 		exit(-1); 
@@ -62,7 +64,7 @@ int main (int argc, char **argv) {
 	}
 	listInit(my_list);
 
-	for(i=3; i < atoi(argv[2])+3; i++) { 
+	for(i=4; i < atoi(argv[2])+4; i++) { 
 		if (!(fp = fopen(argv[i],"r")) ){
 			dprintf(stderr, "%s",argv[i]);
 			perror("fopen"); 
@@ -84,7 +86,7 @@ int main (int argc, char **argv) {
 				exit(-2);
 			}
 
-			nodeInit(space, current_word); 
+			nodeInit(space, current_word, 1); 
 
 			/*En caso de que solo la frecuencia de un elemento */
 			/* se aumente como ese nodo ya esta creado, se libera*/
@@ -123,10 +125,16 @@ int main (int argc, char **argv) {
 	if( sem_post(mutex) == -1)
 		perror("sem_post");
 
+	if( sem_close(mutex) == -1)
+		perror("sem_close");
+
 	fprintf(stderr,"Despues del semaforo\n");
 	
+	if( kill( atoi(argv[3]), SIGUSR1 ) == -1)
+		perror("kill");
 	/*FREE SPACE*/
 	listDestroy(my_list);
+
 	exit(0);
 }
 

@@ -34,7 +34,7 @@ typedef struct list_element{
  *	e: apuntador al elemento a inicializar
  *	c: cadena de caracteres a insertar
  */
-void nodeInit(node *e, char *c);
+void nodeInit(node *e, char *c, int f);
 
 
 /*Funcion: nodeSwap

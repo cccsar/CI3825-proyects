@@ -20,10 +20,10 @@
  *	e: apuntador al elemento a inicializar
  *	c: cadena de caracteres insertar
  */
-void nodeInit(node *e, char* c) {
+void nodeInit(node *e, char* c, int f) {
 	e->next = NULL; 
 	e->prev = NULL;
-	e->frequency = 1;
+	e->frequency = f;
 	e->word = c;
 }
 
@@ -201,7 +201,9 @@ void listPrint(list *l_) {
 		
 		while (dummie != NULL ) { 
 
-			printf("%s %d \n",dummie->word,dummie->frequency); 
+			/*printf("%s %d",dummie->word,dummie->frequency); */
+			printf("%s",dummie->word); 
+			printf("%d",dummie->frequency);
 			fprintf(stderr,"%s %d \n",dummie->word,dummie->frequency); 
 			/*implementacion que usa file descriptors*/
 			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
