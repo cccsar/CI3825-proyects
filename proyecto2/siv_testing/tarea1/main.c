@@ -89,8 +89,6 @@ int main (int argc, char **argv) {
 			}
 
 		}
-
-
 	} 
 
 	listSort(my_list);	
