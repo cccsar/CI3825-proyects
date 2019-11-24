@@ -4,7 +4,7 @@ all: freecpal
 
 freecpal: main.o list.o 
 	@echo "linking... "
-	gcc ${OPTS} -o freecpal main.o list.o
+	gcc ${OPTS} -o freecpal main.o list.o -lpthread
 
 %.o: %.c
 	@echo "compiling... "

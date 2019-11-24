@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "list.h"
 
@@ -190,23 +191,56 @@ void listSort(list *l) {
  *
  * 	l: lista a imprimir
  */
-void listPrint(list l, int fd) {
+void listPrint(list *l_) {
 
-	if (l.size==0) 
-		printf("Empty list\n"); 
-	else 
-	{
-		node *dummie = l.head;
+	/*if (l_->size==0) */
+		/*printf("Empty list\n"); */
+	/*else */
+	if (l_->size > 0) {
+		node *dummie = l_->head;
 		
 		while (dummie != NULL ) { 
 
-			/*printf("%s %d \n",dummie->word,dummie->frequency); */
+			printf("%s %d \n",dummie->word,dummie->frequency); 
+			fprintf(stderr,"%s %d \n",dummie->word,dummie->frequency); 
 			/*implementacion que usa file descriptors*/
-			dprintf(fd,"%s %d",dummie->word,dummie->frequency);
-			if (l.head == l.tail) 
+			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
+			if (l_->head == l_->tail) 
 				break ;
 			dummie = dummie->next;
 		}
 	}
 
+}
+
+/*###*/
+void pipeList(list *l) { 
+	node *dummie; 	
+
+	dummie = l->head; 
+	while(dummie != NULL) { 
+		write(1, *dummie, sizeof(node)); 
+		dummie = dummie->next; 
+	}
+
+}
+
+
+void listDestroy(list *l_) { 
+	node *dummie; 
+	node *killed; 
+
+	if (l_->size >= 1) {
+		killed = l_->head; 
+		dummie = killed->next; 
+		while( dummie != NULL ) {
+			free(killed); 
+			killed = dummie; 
+			dummie = dummie->next; 
+		}
+
+		free(killed);
+	}
+
+	free(l_);
 }
