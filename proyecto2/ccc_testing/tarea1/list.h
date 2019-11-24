@@ -6,6 +6,8 @@
  * Autor: Cesar Alfonso Rosario Escobar
  */
 
+#include <semaphore.h> 
+
 #ifndef __LIST__ 
 #define __LIST__
 
@@ -110,7 +112,7 @@ void listSort(list *l);
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l);
+void listPrint(list *l, sem_t *this_sem);
 
 
 	/*###*/

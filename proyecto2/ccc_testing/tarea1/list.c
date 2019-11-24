@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
 #include "list.h"
 
 
@@ -191,8 +192,8 @@ void listSort(list *l) {
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l_) {
-
+void listPrint(list *l_, sem_t *this_sem) {
+	int *sem_db ;
 	/*if (l_->size==0) */
 		/*printf("Empty list\n"); */
 	/*else */
@@ -201,10 +202,21 @@ void listPrint(list *l_) {
 		
 		while (dummie != NULL ) { 
 
-			/*printf("%s %d",dummie->word,dummie->frequency); */
+			/*********************REGION CRITICA*********************/
+
+			sem_wait(this_sem); 
+
 			printf("%s",dummie->word); 
 			printf("%d",dummie->frequency);
-			fprintf(stderr,"%s %d \n",dummie->word,dummie->frequency); 
+			sem_getvalue(this_sem, sem_db); 
+
+			fprintf(stderr,"valor del semaforo dentro de rc esc: %d\n", *sem_db);
+
+			sleep(1);
+			sem_post(this_sem);
+
+			/*********************FIN DE LA REGION CRITICA	*********************/
+			fprintf(stderr,"\t%s %d \n",dummie->word,dummie->frequency); 
 			/*implementacion que usa file descriptors*/
 			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
 			if (l_->head == l_->tail) 

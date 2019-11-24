@@ -39,17 +39,19 @@ int main (int argc, char **argv) {
 	node *space;
 	list *my_list;
 	sem_t *mutex; 
-	int sem_v; 
+	int *sem_val; 
+
 
 	if( ( mutex = sem_open(SEM_NAME, O_APPEND) )  == SEM_FAILED)
 		perror("sem_open");
 
 	fprintf(stderr,"Direccion del semaforo %p\n", (void *) mutex);
 
-	fprintf(stderr,"%s %s %s %s\n",argv[1] ,argv[2],argv[3],argv[4]);
+	/*fprintf(stderr,"%s %s %s %s\n",argv[1] ,argv[2],argv[3],argv[4]); ###DBG*/
 	/*argv[1] ahora es el file descriptor de un pipe*/
 	/*y argv[2] es el numero de archivos*/
 	/*y argv[3] es el nombre de un semaforo*/
+
 
 	if (argc != atoi(argv[2]) + 4) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
@@ -63,6 +65,7 @@ int main (int argc, char **argv) {
 		exit(-2);
 	}
 	listInit(my_list);
+
 
 	for(i=4; i < atoi(argv[2])+4; i++) { 
 		if (!(fp = fopen(argv[i],"r")) ){
@@ -109,29 +112,51 @@ int main (int argc, char **argv) {
 
 	} 
 
-	/*listSort(my_list);	*/
 
-	/*ahora esto escribe al file descriptor del pipe*/
 
-	fprintf(stderr,"Antes del semaforo\n");
+	sem_val = (int*) malloc(sizeof(int) ) ;
+	if( sem_getvalue(mutex, sem_val)  == -1)
+		perror("sem_getvalue");
 
-		/*REGION CRITICA */
-	if( sem_wait(mutex) == -1)
-		perror("sem_wait");
+	fprintf(stderr,"%d Esperando para entrar, valor del semaforo "
+		       "antes de tomarlo %d\n",getpid(), *sem_val);
 
-	listPrint(my_list);
+
+		/*********************ANTIGUA REGION CRITICA *********************/
+	/*if( sem_wait(mutex) == -1)*/
+		/*perror("sem_wait");*/
+
+
+	/*fprintf(stderr,"\tDentro del semaforo, nadie mas entra\n");*/
+	/*if( sem_getvalue(mutex, sem_val)  == -1)*/
+		/*perror("sem_getvalue");*/
+
+	/*fprintf(stderr,"Valor del semaforo dentro de RC %d\n", *sem_val);*/
+
+
+	/*sleep(2);*/
+	/*********************AQUI ESTA LA NUEVA REGION CRITICA*********************/
+	listPrint(my_list, mutex);
 	/*pipeList(my_list);*/
 
-	if( sem_post(mutex) == -1)
-		perror("sem_post");
+	/*if( kill( atoi(argv[3]), SIGUSR1 ) == -1)*/
+		/*perror("kill");*/
+
+
+	/*if( sem_post(mutex) == -1)*/
+		/*perror("sem_post");*/
+
+		/*********************FIN DE LA ANTIGUA REGION CRITICA *********************/
+
+
+	fprintf(stderr,"##############Despues del semaforo\n");
 
 	if( sem_close(mutex) == -1)
 		perror("sem_close");
 
-	fprintf(stderr,"Despues del semaforo\n");
-	
-	if( kill( atoi(argv[3]), SIGUSR1 ) == -1)
-		perror("kill");
+
+	close( atoi(argv[1]) );
+
 	/*FREE SPACE*/
 	listDestroy(my_list);
 

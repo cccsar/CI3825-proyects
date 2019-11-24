@@ -38,7 +38,7 @@
 #define MAX_DIGITS 20
 #define NAME "freecpal"
 #define FREECPAL 8
-#define SEM_NAME "my_semaphore"
+#define SEM_NAME "/my_semaphore"
 #define SEM_VALUE 1
 #define SEM_MODE S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH
 
@@ -47,6 +47,12 @@
 
 int count; 
 
+
+/* intToString
+ * --------------
+ *
+ *
+ */
 int intToString(char* arr, int a, int *i) { 
 
 	if( a/10 != 0 )  {
@@ -62,6 +68,11 @@ int intToString(char* arr, int a, int *i) {
 }
 
 
+/* getSlice
+ * --------------
+ *
+ *
+ */
 void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 	int i_;
 	
@@ -83,16 +94,23 @@ void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 
 void evaHandler() { 
 	count++; 
-	fprintf(stderr, "cuenta %d\n", count);
+	fprintf(stderr, "RECIBI UNA PUTA SENAL cuenta %d\n", count);
 }
 
 
+/* main
+ * --------------
+ *
+ *
+ */
 int main (int argc, char **argv) { 
-	int n_files, i_, ub, quot, rem, p_, aux, merger_pid, merger_stat, aux_fd; int pid[MAX_PS], status[MAX_PS], pipe_fd[2]; 
+	int n_files, i_, ub, quot, rem, p_, aux, merger_pid, merger_stat, aux_fd;
+       	int pid[MAX_PS], status[MAX_PS], pipe_fd[2]; 
 	char **paths, **help;
 	char *buff;
 
 	int pid_dbg; 
+	int *sem_deb; 
 
 	sem_t *mutex; 
 	list *freq_list; 
@@ -101,7 +119,10 @@ int main (int argc, char **argv) {
 	char* word; 
 	int frequency;
 
+	/*sem_unlink(SEM_NAME);*/
+	/*return 0;*/
 
+	signal(SIGCHLD, evaHandler);
 	paths = (char**) malloc(sizeof(char*)*MAX_FILES); /*perror*/
 	count = 0;
 
@@ -113,10 +134,21 @@ int main (int argc, char **argv) {
 	}
 
 	/*	creo el semaforo*/
-
 	if( ( mutex = sem_open(SEM_NAME, O_CREAT , SEM_MODE, SEM_VALUE) ) == SEM_FAILED)
 		perror("sem_open");
 	printf("Direccion del semaforo %p\n", (void *)mutex);
+	
+
+			/* ### DBG */	
+	sem_deb = (int *) malloc( sizeof(int) ); 
+	if( sem_getvalue(mutex, sem_deb) == -1)
+		perror("sem_getvalue");
+	fprintf(stderr,"Valor inicial del semaforo: %d\n", *sem_deb);
+			/* ### DBG */	
+
+
+	/*if( sem_close(mutex) == -1)*/
+		/*perror("sem_close");*/
 
 
 	/*	consigo los archivos*/
@@ -125,7 +157,6 @@ int main (int argc, char **argv) {
 
 
 	ub = MIN(atoi(argv[1]), n_files);
-	/*	creo al proceso merger*/
 
 	switch( merger_pid = fork() ) 
 	{
@@ -136,7 +167,7 @@ int main (int argc, char **argv) {
 		case 0: 
 			/*********************CODIGO DEL MERGER*********************/
 			/*	acomodo pipe*/
-			signal(SIGUSR1, evaHandler);
+			/*signal(SIGUSR1, evaHandler);*/
 
 			if( close(pipe_fd[WRITE]) == -1)
 				perror("close");
@@ -150,27 +181,42 @@ int main (int argc, char **argv) {
 			freq_list = (list *) malloc( sizeof(list) );
 			listInit(freq_list); 
 
-			printf("Esta en el merger de pid %d\n", getpid() );
-			printf("llego\n");
+
+			printf("\t\testoy en el merger de pid %d\n", getpid() );
+			do {
+				pause; 
+			}while (count != ub);
 
 			/*	leo del pipe los nodos de frecuencia*/
 
-
-			while ( count != ub )  {
+			/*while ( count != ub )  {*/
+			while (TRUE) {
 				/*count ++; */
-				scanf("%s", word);
-				scanf("%d", &frequency); 
+				/*********************REGION CRITICA *********************/
+				/*if( sem_wait(mutex) == -1)*/
+					/*perror("sem_wait");*/
+
+
+				if( scanf("%s", word) == -1)
+					perror("scanf");
+				if( scanf("%d", &frequency)  == -1)
+					perror("scanf");
+
+
+				/*if( sem_post(mutex) == -1)*/
+					/*perror("sem_post");*/
+				/*********************FIN DE REGION CRITICA *********************/
+
 
 				printf("word: %s, frequency: %d\n",word , frequency);
-
 				dummie = (node *) malloc( sizeof(node) );
 				nodeInit(dummie, word, frequency); 
-				printf("hizo algo: palabra %s tamano %d\n",dummie->word, dummie->frequency);
+				printf("hizo algo: palabra %s frecuencia %d\n",dummie->word, dummie->frequency);
 
 				listInsert(freq_list, dummie);
+				sleep(2);
 			}
 
-/**/
 			printf("salio de la insercion\n");
 
 			/*listSort(freq_list);*/
@@ -182,6 +228,8 @@ int main (int argc, char **argv) {
 		default: 
 			break; 
 	}
+
+
 
 
 	/*	calcula la reparticion de archivos*/
@@ -238,8 +286,7 @@ int main (int argc, char **argv) {
 					/*printf("%s\n",help[i_]);*/
 				/*}*/
 
-
-				printf("Estoy en %d\n", getpid()); 
+				printf("estoy en el proceso: %d\n", getpid()); 
 
 				/*cierro los pipes*/
 
@@ -279,11 +326,10 @@ int main (int argc, char **argv) {
 		perror("waitpid");
 
 	/*	cierra y destruye el semaforo*/
+
 	if( sem_unlink(SEM_NAME) == -1)
 		perror("sem_ulink ");
 
-	if( sem_close(mutex) == -1)
-		perror("sem_close");
 
 	/*	HAZ FREE*/
 	for(i_=0; i_< n_files ; i_++) 

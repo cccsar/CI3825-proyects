@@ -2,10 +2,10 @@
 OPTS=-ansi -g -Wpedantic
 
 freecpalproc: main.o  myFind.o hasht.o singly.o list.o
-	gcc ${OPTS} -o freecpalproc main.o myFind.o hasht.o singly.o list.o -lpthread
+	gcc ${OPTS} -o freecpalproc main.o myFind.o hasht.o singly.o list.o -pthread
 
 main.o: main.c myFind.h list.h
-	gcc ${OPTS} -c main.c -lpthread 
+	gcc ${OPTS} -c main.c -pthread 
 
 myFind.o: myFind.c myFind.h hasht.h
 	gcc ${OPTS} -c myFind.c
