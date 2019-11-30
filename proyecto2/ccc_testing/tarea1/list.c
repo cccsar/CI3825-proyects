@@ -192,49 +192,74 @@ void listSort(list *l) {
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l_, sem_t *this_sem) {
+void listPrint(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 	int *sem_db ;
+	int w_controller, word_size, i_; 
+
 	/*if (l_->size==0) */
 		/*printf("Empty list\n"); */
 	/*else */
 	if (l_->size > 0) {
 		node *dummie = l_->head;
 		
-		while (dummie != NULL ) { 
+		for( i_=0; i_<l_->size + 1; i_++) { 
+
+			if( sem_wait(reader)  == -1)
+				perror("sem_wait");
+
+			if( sem_wait(mutex)  == -1)
+				perror("sem_wait");
 
 			/*********************REGION CRITICA*********************/
 
-			sem_wait(this_sem); 
+			fprintf(stderr, "En RC\n");
 
-			printf("%s",dummie->word); 
-			printf("%d",dummie->frequency);
-			sem_getvalue(this_sem, sem_db); 
+			w_controller = 0; 
 
-			fprintf(stderr,"valor del semaforo dentro de rc esc: %d\n", *sem_db);
+			if ( i_ == l_->size ) {
+				w_controller = -1; 
 
-			sleep(1);
-			sem_post(this_sem);
+				if( write(1, &w_controller, sizeof(int) ) == -1)
+					perror("write");
+
+				fprintf(stderr,"here\n");
+			}
+			else {
+
+				fprintf(stderr,"or here\n");
+
+				if( write(1, &w_controller, sizeof(int)  == -1) )
+					perror("write");
+
+				word_size = strlen(dummie->word);
+
+				if( write(1, &word_size, sizeof(int) ) == -1)
+					perror("write");
+
+				if( write(1, dummie->word, word_size)  == -1)
+					perror("write");
+
+				if( write(1, &dummie->frequency, sizeof(int))  == -1)
+					perror("write");
+
+				fprintf(stderr,"paso\n");
+				
 
 			/*********************FIN DE LA REGION CRITICA	*********************/
-			fprintf(stderr,"\t%s %d \n",dummie->word,dummie->frequency); 
-			/*implementacion que usa file descriptors*/
-			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
-			if (l_->head == l_->tail) 
-				break ;
-			dummie = dummie->next;
+
+				if( sem_post(mutex) == -1)
+					perror("sem_post");
+	
+				if( sem_post(writer) == -1)
+					perror("sem_post");
+	
+			}
+
+
+			if( i_ != l_->size - 1)
+				dummie = dummie->next;
+
 		}
-	}
-
-}
-
-/*###*/
-void pipeList(list *l) { 
-	node *dummie; 	
-
-	dummie = l->head; 
-	while(dummie != NULL) { 
-		write(1, *dummie, sizeof(node)); 
-		dummie = dummie->next; 
 	}
 
 }

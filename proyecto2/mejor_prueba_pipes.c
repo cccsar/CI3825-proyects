@@ -30,16 +30,21 @@ int main (int argc, char **argv) {
 
 	if (ps_1 == 0) { 
 
-		close(fd[READ]); 
-
 		printf("llego pid %d\n",getpid());
 		printf("ejecutando %s\n",argv[1]);
+
+
+		close(fd[READ]); 
+
 		dup2(fd[WRITE],1); 
 
 		close(fd[WRITE]); 
 
+
 		execlp(argv[1], argv[1], (char *) NULL) ;
 		perror("execlp"); 
+		
+
 		exit(0);  
 	}
 
@@ -49,16 +54,21 @@ int main (int argc, char **argv) {
 		perror("fork");
 
 	if (ps_2 == 0) {
+		printf("llego pid %d\n",getpid());
+		printf("ejecutando %s\n",argv[2]);
+		
+
 		close(fd[WRITE]); 
 
 		dup2(fd[READ], 0); 
 
 		close(fd[READ]); 
 
-		printf("llego pid %d\n",getpid());
-		printf("ejecutando %s\n",argv[2]);
+
 		execlp(argv[2], argv[2], "-l", (char*) NULL)  ;
 		perror("execlp");
+
+
 		exit(0); 
 	}
 
@@ -70,6 +80,7 @@ int main (int argc, char **argv) {
 	/*espera por escritura/lectura dependiendo del caso*/
 	close(fd[READ]); 
 	close(fd[WRITE]); 
+
 	if ( wait(&st_1) == -1) 
 		perror("wait");
 	/*printf("termino %d\n",ps_1);*/

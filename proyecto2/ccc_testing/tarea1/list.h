@@ -112,12 +112,9 @@ void listSort(list *l);
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l, sem_t *this_sem);
+void listPrint(list *l, sem_t *mutex, sem_t *reader, sem_t *writer);
 
 
-	/*###*/
-void pipeList(list *l);
 
-	/*###*/
 void listDestroy(list *l);
 #endif
