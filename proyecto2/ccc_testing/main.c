@@ -231,7 +231,7 @@ int main (int argc, char **argv) {
 			listInit(freq_list); 
 
 
-			fprintf(stderr,"\t\testoy en el merger de pid %d\n", getpid() );
+			fprintf(stderr,"En el merger %d\n", getpid()); 
 			/*	leo del pipe los nodos de frecuencia*/
 
 			while (terminated != n_ps) {
@@ -283,6 +283,8 @@ int main (int argc, char **argv) {
 
 				if ( *r_controller != -1) 
 					fprintf(stderr, "Debugging\nword: %s\tfrequency: %d\n",word, frequency); 
+
+				fprintf(stderr,"terminados %d",terminated);
 
 			}
 
@@ -348,8 +350,6 @@ int main (int argc, char **argv) {
 					printf("%s ",help[i_]);
 				}
 				printf("\n"); 
-
-				fprintf(stderr,"estoy en el proceso: %d\n", getpid()); 
 
 
 				/*cierro los pipes*/

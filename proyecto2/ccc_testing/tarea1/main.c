@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <signal.h>
 #include "list.h"
 
@@ -41,12 +42,18 @@ int main (int argc, char **argv) {
 	sem_t *mutex, *sem_r, *sem_w; 
 	int *sem_val; 
 
+	int *value;
+
+	value = (int *) malloc( sizeof(int) );
+
+
 	if (argc != atoi(argv[1]) + 2) { 
 		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
 			" {lista de nombre de archivos}\n"); 
 
 		exit(-1); 
 	}
+
 
 	/*ABRO LOS SEMAFOROS*/
 	if( (mutex = sem_open(SMP0, O_WRONLY) )  == SEM_FAILED) {
@@ -55,17 +62,25 @@ int main (int argc, char **argv) {
 		exit(-1); 
 	}
 
+	fprintf(stderr,"Value sem1 %d\n",sem_getvalue(mutex, value) );
+
+
 	if( ( sem_r = sem_open(SMP1, O_WRONLY) ) == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-1); 
 	}
 
+	fprintf(stderr,"Value sem2 %d\n",sem_getvalue(sem_r, value) );
+
+
 	if( ( sem_w = sem_open(SMP2, O_WRONLY) )  == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-1); 
 	}
+
+	fprintf(stderr,"Value sem2 %d\n",sem_getvalue(sem_r, value) );
 
 
 	if ( (my_list = (list*) malloc( sizeof(list) ) ) == NULL ) {
@@ -80,7 +95,7 @@ int main (int argc, char **argv) {
 
 	/*INSERTO NODOS*/
 
-	for(i=2; i < argc ; i++) { 
+	for(i=2; i < argc  ; i++) { 
 
 		if ( !(fp = fopen(argv[i],"r")) ){
 			dprintf(stderr, "%s",argv[i]);
@@ -132,6 +147,7 @@ int main (int argc, char **argv) {
 	/*AQUI SE ENTRA EN LA REGION CRITICA*/
 	listPrint(my_list, mutex, sem_r, sem_w);
 
+	fprintf(stderr,"qk\n"); 
 
 	/*CIERRO SEMAFOROS*/
 	if( sem_unlink(SMP0) == -1)

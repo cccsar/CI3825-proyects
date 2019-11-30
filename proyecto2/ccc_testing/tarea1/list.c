@@ -210,6 +210,7 @@ void listPrint(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 			if( sem_wait(mutex)  == -1)
 				perror("sem_wait");
 
+
 			/*********************REGION CRITICA*********************/
 
 			fprintf(stderr, "En RC\n");
@@ -242,22 +243,26 @@ void listPrint(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 				if( write(1, &dummie->frequency, sizeof(int))  == -1)
 					perror("write");
 
-				fprintf(stderr,"paso\n");
-				
+			fprintf(stderr,"Saliendo de la RC\n"); 			
 
 			/*********************FIN DE LA REGION CRITICA	*********************/
 
 				if( sem_post(mutex) == -1)
 					perror("sem_post");
-	
+
 				if( sem_post(writer) == -1)
 					perror("sem_post");
 	
 			}
 
+			fprintf(stderr,"ya afuera\n"); 
 
-			if( i_ != l_->size - 1)
+
+			if( i_ != l_->size - 1) {
 				dummie = dummie->next;
+				fprintf(stderr,"paso\n");
+			}
+			
 
 		}
 	}
