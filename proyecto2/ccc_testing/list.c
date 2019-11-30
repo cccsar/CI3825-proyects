@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
 #include "list.h"
 
 
@@ -151,15 +152,17 @@ void listSort(list *l) {
 
 	if (l->size > 1) 
 	{
-		/*Se define a i como nodo, para poder usar una copia de*/ 
-		/* sus atributo mientras que j se define como apuntador para*/ 
-		/* realizar modificaciones los atributos del nodo apuntado*/
+		/* Se define a i como nodo, para poder usar una copia de 
+		 * sus atributo mientras que j se define como apuntador para 
+		 * realizar modificaciones los atributos del nodo apuntado
+		 */
 		node i = *(l->head)->next; 
 		node *j ;
 
-		/*En el caso en el que 2 elementos tengan la misma*/
-		/*frecuencia, se comparan sus atributos "word" para ver*/ 
-		/* ordenarlos alfanumericamente.*/ 
+		/* En el caso en el que 2 elementos tengan la misma
+		 * frecuencia, se comparan sus atributos "word" para ver 
+		 * ordenarlos alfanumericamente. 
+		 */
 		while (&i != NULL) { 
 
 			j = i.prev; 
@@ -189,24 +192,16 @@ void listSort(list *l) {
  * ------------
  *	Imprime en consola el contenido de la lista
  *
- * 	l: lista a imprimir
+ * 	l_: lista a imprimir
  */
 void listPrint(list *l_) {
 
-	/*if (l_->size==0) */
-		/*printf("Empty list\n"); */
-	/*else */
 	if (l_->size > 0) {
 		node *dummie = l_->head;
 		
 		while (dummie != NULL ) { 
 
-			/*printf("%s %d",dummie->word,dummie->frequency); */
-			printf("%s",dummie->word); 
-			printf("%d",dummie->frequency);
-			fprintf(stderr,"%s %d \n",dummie->word,dummie->frequency); 
-			/*implementacion que usa file descriptors*/
-			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
+			printf("%s %d \n",dummie->word,dummie->frequency); 
 			if (l_->head == l_->tail) 
 				break ;
 			dummie = dummie->next;
@@ -215,19 +210,170 @@ void listPrint(list *l_) {
 
 }
 
-/*###*/
-void pipeList(list *l) { 
-	node *dummie; 	
 
-	dummie = l->head; 
-	while(dummie != NULL) { 
-		write(1, *dummie, sizeof(node)); 
-		dummie = dummie->next; 
+/*Funcion: listPrintRC
+ * ------------
+ *	Escribe los elementos de una lista en formato: 
+ *		w_controller word_size word frequency
+ *	para que sean leidos en un pipe.
+ *	
+ *	Si se asigna w_controller = 0 sirve para indicar que se escribiran el 
+ *	resto de los campos, pero si w_controller = -1, entonces significa que
+ *	ya se termino de escribir la lista al pipe, o que la lista esta vacia, 
+ *	segun sea el caso.
+ *
+ *		
+ *
+ * 	l_: lista a escribir
+ * 	mutex: semaforo de exclusion mutua.
+ * 	reader: Semaforo que maneja a los "lectores"
+ * 	writer: Semaforo que maneja a los "escritores"
+ * 	
+ *
+ */
+void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
+	int *w_controller, *word_size, *frequency, i_; 
+	char *this_word; 
+
+
+	w_controller = (int *) malloc( sizeof(int) );
+	if (w_controller == NULL) {
+		perror("malloc"); 
+
+		exit(-1) ; 
+	}
+	word_size = (int *) malloc( sizeof(int) );
+	if ( word_size == NULL ) { 
+		perror("malloc"); 
+
+		exit(-1); 
+	}
+	frequency = (int*) malloc( sizeof(int) );
+	if ( frequency == NULL ) { 
+		perror("malloc"); 
+
+		exit(-1); 
 	}
 
-}
+
+	if (l_->size==0)  {
+
+		if( sem_wait(reader)  == -1) {
+			perror("sem_wait");
+
+			exit(-2);
+		}
+
+		if( sem_wait(mutex)  == -1) {
+			perror("sem_wait");
+
+			exit(-2); 
+		}
+
+		*w_controller = -1; 
+
+		if( write(1, w_controller, sizeof(int) ) == -1) {
+			perror("write"); 
+
+			exit(-2); 
+		}
+
+		if( sem_post(mutex)  == -1);  {
+			perror("sem_post");
+
+			exit(-2); 
+		}
+
+		if( sem_post(writer)  == -1) {
+			perror("sem_post");
+
+			exit(-2); 
+		}
+
+	}
+	else if (l_->size > 0) {
+		node *dummie = l_->head;
+		
+		for( i_=0; i_<l_->size + 1 ; i_++) { 
+
+			if( sem_wait(reader)  == -1)
+				perror("sem_wait");
 
 
+			if( sem_wait(mutex)  == -1)
+				perror("sem_wait");
+
+
+			/*********************REGION CRITICA*********************/
+
+
+			if ( i_ == l_->size ) {
+				*w_controller = -1; 
+
+				if( write(1, w_controller, sizeof(int) ) == -1)
+					perror("write");
+
+			}
+			else {
+				*w_controller = 0; 
+
+				if( write(1, w_controller, sizeof(int) )  == -1) 
+					perror("write");
+
+				/*Escribo el tamano de la palabra al pipe */
+				*word_size = strlen(dummie->word);
+				if( write(1, word_size, sizeof(int) ) == -1)
+					perror("write");
+				
+				/*Escribo la palabra al pipe*/
+				this_word = (char*) malloc( sizeof(char) * (*word_size) );
+				this_word = dummie->word; 
+				if( write(1, this_word, *word_size)  == -1)
+					perror("write");
+
+				/*Escribo la frecuencia de la palabra al pipe*/
+				*frequency = dummie->frequency; 
+				if( write(1, frequency, sizeof(int))  == -1)
+					perror("write");
+
+			/*********************FIN DE LA REGION CRITICA	*********************/
+
+			}
+
+			if( sem_post(mutex) == -1) {
+				perror("sem_post");
+
+				exit(-2); 
+			}
+
+			if( sem_post(writer) == -1) {
+				perror("sem_post");
+
+				exit(-2); 
+			}
+	
+
+			if( dummie != NULL ) 
+				dummie = dummie->next;
+			
+
+		}
+
+	}
+
+
+} 
+
+
+
+/* listDestroy
+ * --------------
+ *	Libera la memoria ocupada por una lista.
+ *
+ *
+ * 	l_: lista a liberar
+ *
+ */
 void listDestroy(list *l_) { 
 	node *dummie; 
 	node *killed; 
@@ -246,3 +392,18 @@ void listDestroy(list *l_) {
 
 	free(l_);
 }
+
+				/*DEBUGGING DE SEMAFOROS*/
+			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
+
+			if( sem_getvalue(reader, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(writer, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(mutex, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */

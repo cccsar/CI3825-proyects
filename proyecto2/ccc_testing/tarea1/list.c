@@ -192,80 +192,129 @@ void listSort(list *l) {
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
-	int *sem_db ;
-	int w_controller, word_size, i_; 
+void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
+	int *w_controller, *word_size, *frequency, i_; 
+	int *deb_semval; 
+	char *this_word; 
 
-	/*if (l_->size==0) */
-		/*printf("Empty list\n"); */
-	/*else */
-	if (l_->size > 0) {
+	w_controller = (int *) malloc( sizeof(int) );
+	word_size = (int *) malloc( sizeof(int) );
+	deb_semval = (int*) malloc( sizeof(int) );
+	frequency = (int*) malloc( sizeof(int) );
+
+
+
+	/*fprintf(stderr,"\tTamano de lista: %d del pid: %d\n",l_->size, getpid()); DBG*/
+
+	if (l_->size==0)  {
+
+		sem_wait(reader); 
+		sem_wait(mutex); 
+
+		*w_controller = -1; 
+
+		if( write(1, w_controller, sizeof(int) ) == -1)
+			perror("write");
+
+		sem_post(mutex); 
+		sem_post(writer); 
+
+		return; 
+	}
+	else if (l_->size > 0) {
 		node *dummie = l_->head;
 		
-		for( i_=0; i_<l_->size + 1; i_++) { 
+		for( i_=0; i_<l_->size + 1 ; i_++) { 
+
+			/*fprintf(stderr, "\t\tVALOR DE I: %d del pid: %d\n", i_, getpid()); DBG*/
 
 			if( sem_wait(reader)  == -1)
 				perror("sem_wait");
 
+			sem_getvalue(mutex, deb_semval);
+			/* if( *deb_semval == 0 ) 
+				fprintf(stderr, "%d espera por liberacion de mutex\n", getpid()); DBG*/
+
+			/*fprintf(stderr,"paso\n"); */
 			if( sem_wait(mutex)  == -1)
 				perror("sem_wait");
 
 
 			/*********************REGION CRITICA*********************/
 
-			fprintf(stderr, "En RC\n");
+				/*DEBUGGING DE SEMAFOROS*/
+			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
 
-			w_controller = 0; 
+			if( sem_getvalue(reader, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(writer, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(mutex, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */
+				/*FIN DBG SEMAFOROS*/
+
+
 
 			if ( i_ == l_->size ) {
-				w_controller = -1; 
+				*w_controller = -1; 
 
-				if( write(1, &w_controller, sizeof(int) ) == -1)
+				if( write(1, w_controller, sizeof(int) ) == -1)
 					perror("write");
 
-				fprintf(stderr,"here\n");
 			}
 			else {
 
-				fprintf(stderr,"or here\n");
 
-				if( write(1, &w_controller, sizeof(int)  == -1) )
+
+				*w_controller = 0; 
+				if( write(1, w_controller, sizeof(int) )  == -1) 
 					perror("write");
 
-				word_size = strlen(dummie->word);
 
-				if( write(1, &word_size, sizeof(int) ) == -1)
+				*word_size = strlen(dummie->word);
+				if( write(1, word_size, sizeof(int) ) == -1)
+					perror("write");
+				
+
+				this_word = (char*) malloc( sizeof(char) * (*word_size) );
+				this_word = dummie->word; 
+				if( write(1, this_word, *word_size)  == -1)
 					perror("write");
 
-				if( write(1, dummie->word, word_size)  == -1)
+
+				*frequency = dummie->frequency; 
+				if( write(1, frequency, sizeof(int))  == -1)
 					perror("write");
+				/*fprintf(stderr,"%d################MYDBG###########################\n", getpid());*/
 
-				if( write(1, &dummie->frequency, sizeof(int))  == -1)
-					perror("write");
+				
 
-			fprintf(stderr,"Saliendo de la RC\n"); 			
-
+				/*fprintf(stderr,"Saliendo de la RC\n"); 			*/
 			/*********************FIN DE LA REGION CRITICA	*********************/
 
-				if( sem_post(mutex) == -1)
-					perror("sem_post");
-
-				if( sem_post(writer) == -1)
-					perror("sem_post");
-	
 			}
 
-			fprintf(stderr,"ya afuera\n"); 
+			if( sem_post(mutex) == -1)
+				perror("sem_post");
 
+			if( sem_post(writer) == -1)
+				perror("sem_post");
+	
 
-			if( i_ != l_->size - 1) {
+			if( dummie != NULL ) {
 				dummie = dummie->next;
-				fprintf(stderr,"paso\n");
 			}
 			
 
 		}
+		/*fprintf(stderr, "paso casi al final \n"); DBG*/
 	}
+	/*fprintf(stderr,"paso al final..salio\n"); DBG*/
 
 }
 
@@ -287,4 +336,26 @@ void listDestroy(list *l_) {
 	}
 
 	free(l_);
+}
+
+/*Funcion: listPrint
+ * ------------
+ *	Imprime en consola el contenido de la lista
+ *
+ * 	l: lista a imprimir
+ */
+void listPrint(list *l_) {
+
+	if (l_->size > 0) {
+		node *dummie = l_->head;
+		
+		while (dummie != NULL ) { 
+
+			printf("%s %d \n",dummie->word,dummie->frequency); 
+			if (l_->head == l_->tail) 
+				break ;
+			dummie = dummie->next;
+		}
+	}
+
 }
