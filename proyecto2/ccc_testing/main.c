@@ -24,24 +24,14 @@
 #include "myFind.h"
 #include "list.h"
 
-#define TRUE 1
-#define FALSE 0
 
 #define WRITE 1
 #define READ 0
 
-#define MAX_PATH 5000
-
 #define MAX_PS 1000 
 #define MAX_FILES 419 
 
-#define FD_DIGITS 5
-#define FILES_DIGITS 10 
-
-#define MAX_DIGITS 20
-
-#define EXEC_NAME "freecpal"
-#define FREECPAL 8
+#define WORD_SIZE 20
 
 #define SMP0 "/mutex"
 #define SMP1 "/sem_reader"
@@ -51,52 +41,81 @@
 #define MIN(a,b) (a < b)? a: b;
 
 
-/* intToString
+
+/* countFrequencies
  * --------------
+ *  	Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
+ *  	lee cada palabra del archivo y la inserta en una "lista de frecuencias"
  *
+ *  	Recibe los archivos de un arreglo de strings, seleccionando solo un 
+ *  	segmento de este.
+ *
+ * 		
+ *	my_list:  lista de frecuencias
+ *	paths: arreglo con los nombres de los archivos a leer
+ *	floor: cota inferior del arreglo de archivos a leer
+ *	ceil: cota superior del arreglo de archivos a leer
+ *	reference: se utiliza para desplazarse sobre el arreglo de string 
  *
  */
-int intToString(char* arr, int a, int *i) { 
+void countFrequencies(list *my_list, char** paths, int floor, int ceil, int reference) {
+	int j_; 
+	FILE *fp; 
 
-	if( a/10 != 0 )  {
-		*i = intToString(arr, a/10, i) ;
-		arr[*i] = a%(10) + 48; 
-	}
-	else   
-		arr[*i] = a + 48;
-
-	*i += 1;
-
-	return *i; 
-}
+	char* current_word; 
+	node *space;
 
 
-/* getSlice
- * --------------
- *
- *
- */
-void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
-	int i_, p_, length;
-	
-	/*LLENADO DE ARREGLO DE EXECV*/
+	for(j_=floor*reference; j_ < floor*reference + ceil   ; j_++) { 
 	
 
-	/*asigno nombre, numero de archivos y null terminator*/
-	argl[0] = EXEC_NAME;
-	argl[1] = (char *) malloc( sizeof(char) * MAX_DIGITS );
+		if ( !(fp = fopen(paths[j_],"r")) ){
 
-	p_ = 0;
-	length = intToString(argl[1], slice_size, &p_);
-	argl[1][length] = '\0';
+			fprintf(stderr, "%s",paths[j_]);
+			perror("fopen"); 
+		
+			exit(-3); 
+		}
+		
 
-	argl[slice_size + 2] =  NULL; 
+		/* Se reserva espacio para la primera palabra del archivo */
+		if ( (current_word = (char*) malloc(WORD_SIZE * sizeof(char)+1) ) == NULL ) {
+			perror("malloc");
+			exit(-2);
+		}
+		
+		while( fscanf(fp,"%s",current_word) != EOF) { 
+		
+			if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL ) {
+				perror("malloc");
+		
+				exit(-2);
+			}
+		
+			nodeInit(space, current_word, 1); 
+		
+			/* En caso de que solo la frecuencia de un elemento 
+			 * se aumente como ese nodo ya esta creado, se libera
+			 * la memoria que se almaceno para insertarlo. */
+			if (listInsert(my_list, space) < 0) {
+				free(space);
+				free(current_word);
+			}
+		
+			/* Se reserva espacio para la i-esima palabra 
+			 * del archivo */
+			if ( (current_word = (char*) malloc(WORD_SIZE*sizeof(char)) ) == NULL ) {
+				perror("malloc");
+		
+				exit(-2);
+			}
+		
+		
+		}
+		
+		
+	} 
 
-	/*asigno nombres de archivo*/
-	for(i_=2; i_<slice_size+2 ; i_++) {
-		argl[i_]= (char *) malloc( sizeof(char)* strlen(paths[acummulated + i_ - 2]) );
-		strcpy(argl[i_], paths[acummulated + i_ - 2]);
-	}
 
 }
 
@@ -104,57 +123,53 @@ void getSlice(char** argl, char** paths, int slice_size, int acummulated) {
 
 /* main
  * --------------
+ *	
  *
  *
  */
 int main (int argc, char **argv) { 
-	int i_;
+	int n_files, n_ps, quot, rem, aux, i_; 
+	char **paths ;
 
-	int n_files, n_ps, quot, rem, p_, aux; 
-
-	/*PS STUFF*/
+	/*	Procesos 	*/
 	int status[MAX_PS], merger_stat; 
        	pid_t pid[MAX_PS], merger_pid; 
 	
-	/*PIPE STUFF*/
+	/*	Pipe	*/
 	int pipe_fd[2]; 
 
-	/*ARRAYS OF STRINGS*/
-	char **paths , *buff;
-
-	int pid_dbg; 
-
-	/*SEMAPHORE SUFF*/
+	/*	Semaforo	*/
 	sem_t *mutex, *smp_r, *smp_w; 
 	int *sem_deb, *r_controller; 
 	int trash;
 
-	/*INSIDE MERGER STUFF*/
+	/*	Proceso mezclador	 */
 	char* word; 
 	int frequency, terminated;
 	int* word_size; 
 	list *freq_list; 
 	node *dummie; 
 
-	/*INSIDE COUNTERS STUFF*/
-	char **help;
+	/*	Procesos contadores 	*/
+	int j_, k_; 
+	list *my_list;
+	int *deb_semval;
+	int whiler; 
+
+	int pid_dbg; 
+
+	deb_semval = (int *) malloc( sizeof(int) );
 
 
-	/*********************BEGINNING*********************/
-	
-
-	paths = (char**) malloc(sizeof(char*)*MAX_FILES); /*perror*/
-
-
-	/*CREO PIPE*/
+	/*	Creo pipe	*/
 	if( pipe(pipe_fd)  == -1) {
-		/*### usar sleep para asegurar apertura???*/
 		fprintf(stderr, "Error abriendo pipe");
 		perror("pipe");
-		exit(-1);
+
+		exit(-3);
 	}
 
-	/*ELIMINO SEMAFOROS POR SI EXISTEN*/
+	/* 	Elimino a los semaforos en caso de que existan antes 	*/
 	trash = sem_unlink(SMP0);
 	if( trash != 0 && errno != ENOENT)
 		perror("sem_unlink");	
@@ -168,24 +183,31 @@ int main (int argc, char **argv) {
 		perror("sem_unlink");	
 
 
-	/*ENCUENTRO ARCHIVOS */
+
+	/*	 Ubico los archivos a procesar		*/
+	paths = (char**) malloc(sizeof(char*) * MAX_FILES); /*perror*/
+	if (paths == NULL ) { 
+		perror("malloc");
+		exit(-1); 
+	}
+
 	n_files = myFind(argv[2], paths); 
-	printf("numero de archivos: %d\n",n_files);
 
 
-	/*CALCULO NUMERO DE PROCESOS A USAR*/
+	/*	Calculo el numero de procesos a usar 	*/
 	n_ps = MIN(atoi(argv[1]), n_files);
-	printf("Numero de procesos a usar %d\n",n_ps);
 
 
-	/*CREO SEMAFORO*/
+
+
+	/*	Creo a los semaforos	*/
 	if( ( mutex = sem_open(SMP0, O_CREAT | O_RDWR, MODE, 1) ) == SEM_FAILED ) {
 		perror("sem_open");
 
 		exit(-2); 
 	}
 
-	if( ( smp_r = sem_open(SMP1, O_CREAT | O_RDWR, MODE, n_ps) ) == SEM_FAILED) {
+	if( ( smp_r = sem_open(SMP1, O_CREAT | O_RDWR, MODE, n_ps ) ) == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-2); 
@@ -198,112 +220,176 @@ int main (int argc, char **argv) {
 	}
 
 
-
-
-
-			/*********************CODIGO DEL MERGER*********************/
-
+	/* 		Proceso merger
+	 *
+	 * 	Para empezar cierra los extremos del pipe que no se usaran
+	 *
+	 * 	Luego espera por la escritura al pipe en un semaforo
+	 *
+	 *
+	 * 	Del pipe primero lee una variable "r_controller", que indica si 
+	 * 	un proceso contador ha escrito o si ya termino de escribir. 
+	 * 	En el primer caso, continua leyendo en el formato de escritura
+	 * 	de los procesos contadores.
+	 *
+	 * 	
+	 * 	Este proceso espera hasta que los contadores hayan dejado de 
+	 * 	escribir al pipe, y luego imprime una lista de frecuencias 
+	 * 	ordenada por salida estandar
+	 *
+	 */
 
 	switch( merger_pid = fork() ) 
 	{
+		default: 
+			break; 
+
 		case -1: 
 			perror("fork");
 			dprintf(stderr, "No se pudo abrir el merger\n");
 
-			exit(-1);
+			exit(-4);
+
 		case 0: 
 
-			if( close(pipe_fd[WRITE]) == -1)
+			if( close(pipe_fd[WRITE]) == -1) {
 				perror("close");
+				
+				exit(-3); 
+			}
 
-			if( dup2(pipe_fd[READ], 0) == -1)
+			if( dup2(pipe_fd[READ], 0) == -1) {
 				perror("dup2");
 
-			if( close(pipe_fd[READ]) == -1)
+				exit(-3); 
+			}
+
+			if( close(pipe_fd[READ]) == -1) {
 				perror("close");
+
+				exit(-3);
+			}
+
 
 
 			word_size = (int *) malloc( sizeof(int) );
+			if( word_size == NULL) { 
+				perror("malloc"); 
+
+				exit(-1); 
+			}
 			r_controller = (int *) malloc( sizeof(int) );
+			if( r_controller == NULL ) {
+				perror("malloc");
+
+				exit(-1);
+			}
 			freq_list = (list *) malloc( sizeof(list) );
+			if( freq_list == NULL ) {
+				perror("malloc");
+
+				exit(-1);
+			}
 
 
 			listInit(freq_list); 
 
-
-			fprintf(stderr,"En el merger %d\n", getpid()); 
-			/*	leo del pipe los nodos de frecuencia*/
+			terminated = 0; 
 
 			while (terminated != n_ps) {
 
-				if( sem_wait(smp_w) == -1)
+				if( sem_wait(smp_w) == -1) {
 					perror("sem_wait");
 
-				if( sem_wait(mutex)  == -1)
+					exit(-2);
+				}
+
+				if( sem_wait(mutex)  == -1) {
 					perror("sem_wait");
+
+					exit(-2);
+				}
 
 				/*********************REGION CRITICA *********************/
 
-				if( read(0, r_controller, sizeof(int) ) == -1) /*###*/
-					perror("read");
+				read(0, r_controller, sizeof(int) ) ; 
 
  
 				if( *r_controller != -1) { 
 
+
+					/*Inicializo nodo*/
 					dummie = (node *) malloc( sizeof(node) );
+					if( dummie == NULL ) {
+						perror("malloc");
 
-					if( read(0, word_size, sizeof(int) ) == -1) /*###*/
-						perror("read");
+						exit(-1);
+					}
+					
+					/*leo el tamano de la palabra*/
+					read(0, word_size, sizeof(int) ); 
 
-					word = (char *) malloc( *word_size * sizeof(char) ); /*###*/
-					if( read(0, word, *word_size)  == -1)
-						perror("read");
+					/*leo la la palabra*/
+					word = (char *) malloc((*word_size) * sizeof(char)); 
+					if( word == NULL ) {
+						perror("malloc");
 
-					if( read(0, &frequency, sizeof(int) )  == -1) /*###*/
-						perror("read");
+						exit(-1);
+					}
+					read(0, word, *word_size);
+
+					/*leo la frecuencia*/
+					read(0, &frequency, sizeof(int) );
+
 
 
 					nodeInit(dummie, word, frequency); 
+
 					listInsert(freq_list, dummie);
 
 				}
-				else {
+				else  
 					terminated++; 
-					fprintf(stderr,"terminated already %d\n",terminated);
-				}
+
 
 				/*********************FIN DE REGION CRITICA *********************/
 
-				if( sem_post(mutex)  == -1)
+
+				if( sem_post(mutex)  == -1) {
 					perror("sem_post");
+					fprintf(stderr,"aqui\n");
 
-				if( sem_post(smp_r)  == -1)
+					exit(-2);
+				}
+
+				if( sem_post(smp_r)  == -1) {
 					perror("sem_post");
+					fprintf(stderr,"aqui\n");
 
-
-				if ( *r_controller != -1) 
-					fprintf(stderr, "Debugging\nword: %s\tfrequency: %d\n",word, frequency); 
-
-				fprintf(stderr,"terminados %d",terminated);
-
+					exit(-2);
+				}
+				
 			}
 
+			close(0); 
 
 			listSort(freq_list);
 			listPrint(freq_list); 
 
-			listDestroy(freq_list);
-
 			exit(0);
-		default: 
-			break; 
 	}
 
 
-			/*********************FIN DE CODIGO DEL MERGER*********************/
 
-
-	/*	calcula la reparticion de archivos*/
+	/*		 Se calcula la reparticion de archivos		
+	 *	Si se piden mas procesos que archivos encontrados, entonces se utilizaran
+	 *	tantos procesos como archivos.
+	 *
+	 *	De lo contrario	se reparte una cantidad de "quot" archivos por proceso, 
+	 *	salvo en el ultimo proceso, que recibe "quot + rem" archivos.
+	 *
+	 */
+	
 	if ( n_ps >= n_files ) {
 		quot = 1; 
 		rem = 0;
@@ -314,70 +400,105 @@ int main (int argc, char **argv) {
 	}
 
 
-
-
-			/*********************CODIGO DE CONTADORES*********************/
-
+	/*	Procesos contadores
+	 *
+	 *
+	 *	Comienzan cerrando los file descriptors del pipe que no se usaran
+	 *
+	 *	Luego calculan la frecuencia de las palabras en los archivos 
+	 *	recibidos. Esto se almacena en una lista de frecuencias
+	 *
+	 *	Despues de esto pasan a escribir el contenido de la lista en un 
+	 *	pipe, un nodo a la vez (con un formato en particular). Esto es 
+	 *	mediado por semaforo, de forma que mientras un proceso escribe, ninguno 
+	 *	otro lee o escribe. 
+	 *
+	 *	por ultime liberan buffers y cierran file descriptors
+	 */
 
 	for(i_=0; i_< n_ps ; i_++) {
 
 		switch( pid[i_] = fork() ) 
 		{
+			default: 
+				continue;
+
 			case -1: 
 				perror("fork"); 
-				exit; 
+
+				exit(-4); 
+
 			case 0: 
-				/*aun tengo que averiguar como liberar espacio de help*/
 
 				if ( i_ != n_ps - 1) 
 					aux = quot; 
 				else 
 					aux = quot + rem; 
-					
-
-				help = (char**) malloc( sizeof(char*) * (aux + 3) );
 
 
-				getSlice(help, paths, aux, quot*i_);
-				
-				p_ = 0;
-				p_ = intToString(help[1], aux, &p_);
-				help[1][p_] = '\0';
-
-
-				/*debugging de help */
-				for(i_=0; i_<aux+2 ; i_++) {
-					printf("%s ",help[i_]);
-				}
-				printf("\n"); 
-
-
-				/*cierro los pipes*/
-				if( close(pipe_fd[READ])  == -1)
+				/*Cierro extremos del pipe no usados*/
+				if( close(pipe_fd[READ])  == -1) {
 					perror("close");
 
-				if( dup2(pipe_fd[WRITE],1)  == -1)
+					exit(-3); 
+				}
+
+				if( dup2(pipe_fd[WRITE],1)  == -1) {
 					perror("dup2");
 
-				if( close(pipe_fd[WRITE]) == -1)
+					exit(-3); 
+				}
+
+				if( close(pipe_fd[WRITE]) == -1) {
 					perror("close");
 
+					exit(-3); 
+				}
 
-				execv(help[0], help); 
 
-				perror("execv");
-			default: 
-				continue;
+				my_list = (list*) malloc( sizeof(list) ); 
+				if (my_list == NULL ) {
+					perror("malloc"); 
+
+					exit(-1); 
+				}
+				listInit(my_list);
+			
+
+				/*	Inserto nodos y cuento frecuencias	*/
+				countFrequencies(my_list, paths, quot, aux, i_); 
+				
+				/*	Escribo mi lista de frecuencias al pipe	*/
+				listPrintRC(my_list, mutex, smp_r, smp_w);
+
+
+
+				if( sem_close(mutex) == -1) 
+					perror("sem_close");
+				
+				if( sem_close(smp_r) == -1)
+					perror("sem_close");
+				
+				if (sem_close(smp_w) == -1) 
+					perror("sem_close"); 
+
+
+				close(1); 
+
+
+				listDestroy(my_list); 
+				
+				
+				exit(0);
+
 
 		}
 	}
 
-			/*********************FIN DE CODIGO DE CONTADORES*********************/
 	
 	
-	/*********************END*********************/
 
-	/*CIERRO PIPES*/
+	/*	Cierro pipes	*/
 	if( close(pipe_fd[0]) == -1)
 		perror("close");
 
@@ -385,20 +506,19 @@ int main (int argc, char **argv) {
 		perror("close");
 
 
-	/*ESPERA PROCESOS*/
+	/*	Espero procesos		*/
 	for (i_=0 ; i_<n_ps ; i_++)   {
 
 		if( (pid_dbg = wait(&status[i_]) ) == -1) 
 			perror("waitpid ");
 
-		printf("%d termino\n",pid_dbg);
 	}
 
-	if( waitpid(merger_pid,  merger_stat, 0)  == -1)
+	if( wait(&status[0])  == -1)
 		perror("waitpid");
 
 
-	/*ELIMINO LOS SEMAFOROS*/
+	/*	Elimino Semaforos	*/
 	if( sem_unlink(SMP0) == -1)
 		perror("sem_unlink");
 
@@ -409,7 +529,7 @@ int main (int argc, char **argv) {
 		perror("sem_unlink");
 	
 
-	/*CIERRO LOS SEMAFOROS*/
+	/*	Cierro los semaforos 	*/
 	if( sem_close(mutex) == -1)
 		perror("sem_close");
 
@@ -420,14 +540,22 @@ int main (int argc, char **argv) {
 		perror("sem_close");
 
 
-	/*LIBERA ESPACIO*/
-	for(i_=0; i_< n_files ; i_++) 
-		free(paths[i_]);
-
-	free(paths);
-
-
 	return 0; 
 }
 
 
+
+				/*DEBUGGING DE SEMAFOROS*/
+			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
+
+			if( sem_getvalue(reader, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(writer, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(mutex, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */

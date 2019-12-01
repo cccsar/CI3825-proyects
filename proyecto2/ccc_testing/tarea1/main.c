@@ -31,7 +31,7 @@
 
 int main (int argc, char **argv) { 
 
-	int i,j;
+	int i;
 
 	FILE *fp; 
 
@@ -56,31 +56,31 @@ int main (int argc, char **argv) {
 
 
 	/*ABRO LOS SEMAFOROS*/
-	if( (mutex = sem_open(SMP0, O_WRONLY) )  == SEM_FAILED) {
+	if( (mutex = sem_open(SMP0, O_RDWR) )  == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-1); 
 	}
 
-	fprintf(stderr,"Value sem1 %d\n",sem_getvalue(mutex, value) );
+	fprintf(stderr,"initial value mutex, should be 1: %d\n",sem_getvalue(mutex, value) );
 
 
-	if( ( sem_r = sem_open(SMP1, O_WRONLY) ) == SEM_FAILED) {
+	if( ( sem_r = sem_open(SMP1, O_RDWR) ) == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-1); 
 	}
 
-	fprintf(stderr,"Value sem2 %d\n",sem_getvalue(sem_r, value) );
+	fprintf(stderr,"Initial value sem_r, should be biggest: %d\n",sem_getvalue(sem_r, value) );
 
 
-	if( ( sem_w = sem_open(SMP2, O_WRONLY) )  == SEM_FAILED) {
+	if( ( sem_w = sem_open(SMP2, O_RDWR) )  == SEM_FAILED) {
 		perror("sem_open");
 
 		exit(-1); 
 	}
 
-	fprintf(stderr,"Value sem2 %d\n",sem_getvalue(sem_r, value) );
+	fprintf(stderr,"Initial value sem_w, should be 1: %d\n",sem_getvalue(sem_r, value) );
 
 
 	if ( (my_list = (list*) malloc( sizeof(list) ) ) == NULL ) {
@@ -145,7 +145,7 @@ int main (int argc, char **argv) {
 
 
 	/*AQUI SE ENTRA EN LA REGION CRITICA*/
-	listPrint(my_list, mutex, sem_r, sem_w);
+	listPrintRC(my_list, mutex, sem_r, sem_w);
 
 	fprintf(stderr,"qk\n"); 
 

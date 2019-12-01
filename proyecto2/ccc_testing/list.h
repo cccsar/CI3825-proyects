@@ -6,6 +6,8 @@
  * Autor: Cesar Alfonso Rosario Escobar
  */
 
+#include <semaphore.h> 
+
 #ifndef __LIST__ 
 #define __LIST__
 
@@ -104,18 +106,18 @@ int listInsert(list *l, node *e);
 void listSort(list *l);
 
 
+void listPrint(list *l_); 
+
+
 /*Funcion: listPrint
  *------------
  *	Imprime en consola el contenido de la lista
  *
  * 	l: lista a imprimir
  */
-void listPrint(list *l);
+void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer);
 
 
-	/*###*/
-void pipeList(list *l);
 
-	/*###*/
-void listDestroy(list *l);
+void listDestroy(list *l_);
 #endif
