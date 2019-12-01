@@ -7,147 +7,169 @@
 
 #include "list.h"
 
-#define MAX 10
 #define WORD_SIZE 20
+#define MAX_THREADS 1000
+#define ARGV_DESP 3
 
-/*Estructura de un hilo*/
-struct thread_vars_t
+typedef struct thread_vars_t
 {
-    /*Atributos*/
-    int num_args;
-    int num_files;
-    char** files;
-    /*Semaforo*/
-    sem_t semaphore;
-};
+    char **files;
+	list *main_list;
+	int initial_file;
+	int last_file;
+}thread_vars;
 
-void memoryError() {
-	perror("Error, memoria insuficiente\n");
-}
+typedef struct thread_semafore_t
+{
+    sem_t mutex;
+}thread_semafore;
 
-/*Funcion que maneja el hilo*/
+typedef struct thread_data_t
+{
+	thread_vars *data;
+	thread_semafore *semaphore;
+}thread_data;
+
 void *test(void *arg)
 {
-    struct thread_vars_t *vars;
+    thread_data *shared;
     FILE *fp; 
 	int i,j, fd;
 	char *current_word;
 	node *space;
 	list *my_list;
 
-    vars = arg;
-
-	if (vars->num_args != atoi(vars->files[2]) + 3) { 
-		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
-			" {lista de nombre de archivos}\n"); 
-		exit(-1); 
-	}
+    shared = arg;
 
  	my_list = (list*) malloc( sizeof(list) );
 	if (!my_list) {
-		memoryError();
 		exit(-2);
 	}
 	listInit(my_list);
-
-	for(i = 3; i < atoi(vars->files[1])+3; i++) { 
-		if (!(fp = fopen(vars->files[i],"r")) ){
-			dprintf(stderr, "%s",vars->files[i]);
-			perror("fopen"); 
-			exit(-3); 
-		}
-
-		/*Se reserva espacio para la primera palabra del archivo*/
-		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
-		if (!current_word) {
-			memoryError();	
-			exit(-2);
-		}
 	
-		while( fscanf(fp,"%s",current_word) != EOF) { 
-
-			space = (node*) malloc( sizeof(node) ) ; 
-			if(!space) {
-				memoryError(); 	
-				exit(-2);
+	i = shared->data->initial_file;
+	while(i <= shared->data->last_file)
+	{
+		if (!(fp = fopen(shared->data->files[i],"r")) )
+		{ 
+		/*Bad*/
+		}
+		
+		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
+		if (!current_word) 
+		{
+			/*Bad*/
+		}
+		
+		while(fscanf(fp,"%s",current_word) != EOF) 
+		{ 
+			space = (node*)malloc(sizeof(node)); 
+			if(!space) 
+			{
+				/*Bad*/
 			}
 
 			nodeInit(space, current_word, 0); 
 
-			/*En caso de que solo la frecuencia de un elemento */
-			/* se aumente como ese nodo ya esta creado, se libera*/
-			/* la memoria que se almaceno para insertarlo.*/
-			if (listInsert(my_list, space) < 0) {
+			if (listInsert(my_list, space) < 0) 
+			{
 				free(space);
 				free(current_word);
 			}
 
-			/*Se reserva espacio para la i-esima palabra*/ 
-			/* del archivo*/
 			current_word = (char*) malloc(WORD_SIZE*sizeof(char)); 			
-			if(!current_word) {
-				memoryError(); 
-				exit(-2); 
+			if(!current_word) 
+			{
+				/*Bad*/
 			}
 		}
+		i++;
 	}
-
+	
     listSort(my_list);
 
     /*El semaforo esta en rojo (Bloqueo)*/
-    sem_wait(&vars->semaphore);
-    
-    /*Llamada a merger*/
-    /*Region critica*/
+    sem_wait(&(shared->semaphore->mutex));
 
-    /*El semaforo esta en verde (Desbloqueo)*/
-    sem_post(&vars->semaphore);
+    /*listMerge(shared->data->main_list, my_list);*/
 	
-	listPrint(my_list);
-	free(my_list);
+    /*El semaforo esta en verde (Desbloqueo)*/
+    sem_post(&(shared->semaphore->mutex));
 
-    /*El hilo termina*/
-    /*pthread_exit((void *)big_value);*/
+	free(my_list);
 }
 
 int main(int argc, char *argv[]) 
 {
-    /*Estructura del hilo*/
-    struct thread_vars_t *vars = malloc (sizeof(struct thread_vars_t));
-    /*Arreglo de hilos*/
-    pthread_t t_ids[MAX];
-    /*Variables*/
-    int i, value;
+	list *main_list = malloc(sizeof(list));
+    
+    pthread_t t_ids[MAX_THREADS];
+    int i, n_thread, n_files, rest, x, y, index;
 
-    /*Inicializacion del semaforo*/
-    sem_init(&vars->semaphore, 0, 1);
+	x = atoi(argv[1]);
+	y = atoi(argv[2]);
 
-    /*Inicializacion de los atributos del hilo*/
+	listInit(main_list);
 
+	n_thread = (x >= y ? y : x);
+	n_files = y / x;
+	rest = y % x;
+
+	index = 0;
     /*Creacion de los hilos con la funcion test*/
-    for (i = 0; i < MAX; i++) 
+    for (i = 0; i < n_thread; i++)
     {
-        if (pthread_create(&t_ids[i], NULL, *test, vars) != 0)
+		/*main_data->data = malloc(sizeof(thread_data));
+		main_data->data->files = argv;
+		main_data->data->main_list = main_list;
+		main_data->data->initial_file = ARGV_DESP + index;*/
+
+		thread_data *main_data = malloc (sizeof(thread_data));
+		main_data->semaphore = malloc(sizeof(thread_semafore));
+		main_data->data = malloc(sizeof(thread_data));
+		sem_init(&(main_data->semaphore->mutex), 0, 1);
+
+		main_data->data->files = argv;
+		main_data->data->main_list = main_list;
+		main_data->data->initial_file = ARGV_DESP + index;
+
+		if(rest != 0)
+		{
+			main_data->data->last_file = ARGV_DESP + index + n_files + 1;
+			index = n_files + 1;
+			rest--;
+		}
+		else
+		{
+			main_data->data->last_file = ARGV_DESP + index + n_files;
+			index = n_files;
+		}
+		
+        if (pthread_create(&t_ids[i], NULL, *test, main_data) != 0)
         {        
             printf("NO CREATE\n");
         }
     }
-
+	
     /*Se realiza la espera de los hilos*/
-    for (i = 0; i < MAX; i++) 
+    for (i = 0; i < 1; i++) 
     {
-        /*Valor de retorno del hilo*/
-        void *value;
-
-        if (pthread_join(t_ids[i], &value) != 0)
+        if (pthread_join(t_ids[i], NULL) != 0)
         {
             printf("NO JOIN\n");
         }
     }
+	
+	/*Muestra del contenido de la lista*/
+	/*listPrint(main_list);*/
 
     /*El hilo termina*/
     pthread_exit(NULL);
 
     /*Se libera la memoria del semaforo*/
-    sem_destroy(&vars->semaphore);
+    /*sem_destroy(&(main_data->semaphore->mutex));*/
+
+	/*Se libera la memoria*/
+	free(main_list);
+	/*free(main_data);*/
 }
