@@ -158,6 +158,8 @@ int main (int argc, char **argv) {
 
 	int pid_dbg; 
 
+	deb_semval = (int *) malloc( sizeof(int) );
+
 
 	/*	Creo pipe	*/
 	if( pipe(pipe_fd)  == -1) {
@@ -328,8 +330,7 @@ int main (int argc, char **argv) {
 					read(0, word_size, sizeof(int) ); 
 
 					/*leo la la palabra*/
-					word = (char *) malloc((*word_size) 
-							* sizeof(char)); 
+					word = (char *) malloc((*word_size) * sizeof(char)); 
 					if( word == NULL ) {
 						perror("malloc");
 
@@ -347,20 +348,23 @@ int main (int argc, char **argv) {
 					listInsert(freq_list, dummie);
 
 				}
-				else 
+				else  
 					terminated++; 
+
 
 				/*********************FIN DE REGION CRITICA *********************/
 
 
 				if( sem_post(mutex)  == -1) {
 					perror("sem_post");
+					fprintf(stderr,"aqui\n");
 
 					exit(-2);
 				}
 
 				if( sem_post(smp_r)  == -1) {
 					perror("sem_post");
+					fprintf(stderr,"aqui\n");
 
 					exit(-2);
 				}
@@ -477,6 +481,12 @@ int main (int argc, char **argv) {
 				
 				if (sem_close(smp_w) == -1) 
 					perror("sem_close"); 
+
+
+				close(1); 
+
+
+				listDestroy(my_list); 
 				
 				
 				exit(0);
@@ -501,6 +511,7 @@ int main (int argc, char **argv) {
 
 		if( (pid_dbg = wait(&status[i_]) ) == -1) 
 			perror("waitpid ");
+
 	}
 
 	if( wait(&status[0])  == -1)
@@ -534,3 +545,17 @@ int main (int argc, char **argv) {
 
 
 
+				/*DEBUGGING DE SEMAFOROS*/
+			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
+
+			if( sem_getvalue(reader, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(writer, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
+
+			if( sem_getvalue(mutex, deb_semval)  == -1)
+				perror("sem_getvalue");
+			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */

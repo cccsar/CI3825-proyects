@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <semaphore.h>
+#include <errno.h>
 #include "list.h"
 
 
@@ -272,22 +273,14 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 
 		*w_controller = -1; 
 
-		if( write(1, w_controller, sizeof(int) ) == -1) {
-			perror("write"); 
-
-			exit(-2); 
-		}
+		write(1, w_controller, sizeof(int) ); 
 
 		if( sem_post(mutex)  == -1);  {
-			perror("sem_post");
-
-			exit(-2); 
+			perror("sem_post"); /* ### BUG*/
 		}
 
 		if( sem_post(writer)  == -1) {
-			perror("sem_post");
-
-			exit(-2); 
+			perror("sem_post"); /* ### BUG*/
 		}
 
 	}
