@@ -79,7 +79,7 @@ void countFrequencies(list *my_list, char** paths, int floor, int ceil, int refe
 		
 
 		/* Se reserva espacio para la primera palabra del archivo */
-		if ( (current_word = (char*) malloc(WORD_SIZE * sizeof(char)) ) == NULL ) {
+		if ( (current_word = (char*) malloc(WORD_SIZE * sizeof(char)+1) ) == NULL ) {
 			perror("malloc");
 			exit(-2);
 		}

@@ -12,6 +12,12 @@ elif [ "$1" = "links" ] ; then
 	links ;
 elif [ "$1" = "xiao" ] ; then
 	xiao;
+elif [ "$1" = "maldito" ] ; then
+	maldito; 
+elif [ "$1" = "fumado" ] ; then
+	fumado; 
+elif [ "$1" = "prueba" ] ; then
+	generateTrash; 
 fi
 
 function easy() {
@@ -61,3 +67,38 @@ function links() {
 	done
 }
 
+function generateTrash() { 
+	trash_size=`echo $(($RANDOM%691))`; 
+	
+	for i in {1.."$trash_size"}; do 
+		touch "$i"; 
+	done
+}
+
+DICT="/usr/share/dict/cracklib-small";
+
+function fumado() {
+
+	mkdir fumado; 
+	cd fumado ; 
+
+	for i in {1..10} ; do 
+		tail -n ` echo $(( $i * 2))` $DICT > proof"$i".txt;
+	done
+
+	cd ../
+}
+
+function maldito() { 
+	
+	mkdir megaMaldito; 
+	cd megaMaldito;
+	for i in {1..419} ; do 
+		if [ `echo $(( $i % 2 )) ` -eq 0 ] ; then
+			tail -n `echo $(( $i * 10 )) ` $DICT > proof"$i".txt; 
+		else  
+			head -n `echo $(( $i * 10 )) ` $DICT > proof"$i".txt 
+		fi;
+	done
+	cd ../;
+}
