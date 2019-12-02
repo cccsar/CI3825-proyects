@@ -10,166 +10,153 @@
 #define WORD_SIZE 20
 #define MAX_THREADS 1000
 #define ARGV_DESP 3
+#define SEM_COUNT 1
+#define SEM_SHARED_WITH 0
 
-typedef struct thread_vars_t
-{
+/*Estructura global de hilos*/
+typedef struct thread_vars_struct{
     char **files;
 	list *main_list;
-	int initial_file;
-	int last_file;
-}thread_vars;
+	int num_files;
+}thread_vars_t;
 
-typedef struct thread_semafore_t
-{
-    sem_t mutex;
-}thread_semafore;
-
-typedef struct thread_data_t
-{
-	thread_vars *data;
-	thread_semafore *semaphore;
-}thread_data;
+/*Variables globales*/
+int global_index;
+sem_t sem_merge;
+sem_t sem_index;
 
 void *test(void *arg)
 {
-    thread_data *shared;
+    thread_vars_t *vars;
     FILE *fp; 
-	int i,j, fd;
+	int index;
 	char *current_word;
 	node *space;
 	list *my_list;
 
-    shared = arg;
-
- 	my_list = (list*) malloc( sizeof(list) );
+    vars = (thread_vars_t*)arg;
+	
+	my_list = (list*)malloc(sizeof(list));
 	if (!my_list) {
 		exit(-2);
 	}
 	listInit(my_list);
-	
-	i = shared->data->initial_file;
-	while(i <= shared->data->last_file)
+
+	do
 	{
-		if (!(fp = fopen(shared->data->files[i],"r")) )
-		{ 
-		/*Bad*/
-		}
+		sem_wait(&sem_index);
+			index = (isFileAvailable(vars->num_files) == 1) ? global_index : -1;
+		sem_post(&sem_index);
 		
-		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
-		if (!current_word) 
-		{
+		if(index == -1){
+			break;
+		}
+
+		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r")) ){ 
 			/*Bad*/
 		}
 		
-		while(fscanf(fp,"%s",current_word) != EOF) 
-		{ 
+		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
+		if (!current_word) {
+			/*Bad*/
+		}
+
+		while(fscanf(fp,"%s",current_word) != EOF) { 
 			space = (node*)malloc(sizeof(node)); 
-			if(!space) 
-			{
+			if(!space) {
 				/*Bad*/
 			}
 
 			nodeInit(space, current_word, 0); 
 
-			if (listInsert(my_list, space) < 0) 
-			{
+			if (listInsert(my_list, space) < 0) {
 				free(space);
 				free(current_word);
 			}
 
 			current_word = (char*) malloc(WORD_SIZE*sizeof(char)); 			
-			if(!current_word) 
-			{
+			if(!current_word) {
 				/*Bad*/
 			}
 		}
-		i++;
-	}
-	
-    listSort(my_list);
 
-    /*El semaforo esta en rojo (Bloqueo)*/
-    sem_wait(&(shared->semaphore->mutex));
+		listSort(my_list);
+		sem_wait(&sem_merge);
+			/*printf("----------\n");
+			listPrint(my_list);
+			printf("----------\n");*/
+			listMerge(vars->main_list, my_list);
+		sem_post(&sem_merge);
 
-    /*listMerge(shared->data->main_list, my_list);*/
-	
-    /*El semaforo esta en verde (Desbloqueo)*/
-    sem_post(&(shared->semaphore->mutex));
+		free(current_word);
+		free(my_list);
+	} while (index == 1);
 
-	free(my_list);
+	pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[]) 
-{
-	list *main_list = malloc(sizeof(list));
-    
+int isFileAvailable(int n){
+	if(global_index < n - 1){
+		global_index++;
+		return 1;
+	}else{
+		return -1;
+	}
+}
+
+int main(int argc, char *argv[]){
+	thread_vars_t *thread_vars;
+	list *main_list;
     pthread_t t_ids[MAX_THREADS];
-    int i, n_thread, n_files, rest, x, y, index;
+    int i, n_thread, n_files;
 
-	x = atoi(argv[1]);
-	y = atoi(argv[2]);
+	thread_vars = (thread_vars_t*)malloc(sizeof(thread_vars));
+	main_list = (list*)malloc(sizeof(list));
 
+	n_thread = atoi(argv[1]);
+	n_files = atoi(argv[2]);
+	global_index = -1;
+	
+	if(n_thread > MAX_THREADS){
+		/*Error*/
+		free(thread_vars);
+		free(main_list);
+		exit(-1);
+	}
+	
 	listInit(main_list);
+	sem_init(&sem_index, SEM_SHARED_WITH, SEM_COUNT);
+	sem_init(&sem_merge, SEM_SHARED_WITH, SEM_COUNT);
+	
+	thread_vars->files = argv;
+	thread_vars->main_list = main_list;
+	thread_vars->num_files = n_files;
 
-	n_thread = (x >= y ? y : x);
-	n_files = y / x;
-	rest = y % x;
+	n_thread = (n_thread >= n_files ? n_files : n_thread);
 
-	index = 0;
     /*Creacion de los hilos con la funcion test*/
-    for (i = 0; i < n_thread; i++)
-    {
-		/*main_data->data = malloc(sizeof(thread_data));
-		main_data->data->files = argv;
-		main_data->data->main_list = main_list;
-		main_data->data->initial_file = ARGV_DESP + index;*/
-
-		thread_data *main_data = malloc (sizeof(thread_data));
-		main_data->semaphore = malloc(sizeof(thread_semafore));
-		main_data->data = malloc(sizeof(thread_data));
-		sem_init(&(main_data->semaphore->mutex), 0, 1);
-
-		main_data->data->files = argv;
-		main_data->data->main_list = main_list;
-		main_data->data->initial_file = ARGV_DESP + index;
-
-		if(rest != 0)
-		{
-			main_data->data->last_file = ARGV_DESP + index + n_files + 1;
-			index = n_files + 1;
-			rest--;
-		}
-		else
-		{
-			main_data->data->last_file = ARGV_DESP + index + n_files;
-			index = n_files;
-		}
-		
-        if (pthread_create(&t_ids[i], NULL, *test, main_data) != 0)
-        {        
+    for (i = 0; i < n_thread; i++){
+        if (pthread_create(&t_ids[i], NULL, *test, thread_vars) != 0){        
             printf("NO CREATE\n");
         }
     }
 	
     /*Se realiza la espera de los hilos*/
-    for (i = 0; i < 1; i++) 
-    {
-        if (pthread_join(t_ids[i], NULL) != 0)
-        {
+    for (i = 0; i < n_thread; i++) {
+        if (pthread_join(t_ids[i], NULL) != 0){
             printf("NO JOIN\n");
         }
     }
 	
 	/*Muestra del contenido de la lista*/
-	/*listPrint(main_list);*/
-
-    /*El hilo termina*/
-    pthread_exit(NULL);
-
-    /*Se libera la memoria del semaforo*/
-    /*sem_destroy(&(main_data->semaphore->mutex));*/
+	listPrint(main_list);
 
 	/*Se libera la memoria*/
+    sem_destroy(&sem_index);
+	sem_destroy(&sem_merge);
 	free(main_list);
-	/*free(main_data);*/
+	free(thread_vars);
+
+	/*El hilo termina*/
+    pthread_exit(NULL);
 }

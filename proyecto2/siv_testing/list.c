@@ -113,17 +113,14 @@ void listInit(list *l) {
 node* listSearch(list *l, node *e) {
 
 	/*dummie actua como un iterador sobre los elementos de la lista*/
-	
 	node *dummie = l->head; 	
-	int count = 0;
 
-	while( dummie != NULL ) {
+	while(dummie != NULL) {
 		
-		if( strcmp(dummie->word, e->word) == 0 ) 
-			return dummie; 
-
+		if(strcmp(dummie->word, e->word) == 0){
+			return dummie;
+		}
 		dummie = dummie->next;
-		count++;
 	}
 
 	return NULL;
@@ -148,7 +145,7 @@ int listInsert(list *l, node *e) {
 	{
 		l->head = e; 
 		l->tail = e;
-		/*e->frequency++;*/
+		e->frequency++;
 
 	}
 	else {
@@ -156,7 +153,6 @@ int listInsert(list *l, node *e) {
 		
 		if (contains != NULL) 
 		{
-			/*contains->frequency++;	*/
 			contains->frequency += e->frequency; 
 			return -1;
 		}
@@ -164,8 +160,7 @@ int listInsert(list *l, node *e) {
 			(l->tail)->next = e; 
 			e->prev = l->tail; 
 			l->tail = e; 
-			/*e->frequency++; */
-
+			e->frequency++;
 		}
 	}
 	l->size++; 
@@ -356,21 +351,11 @@ void listMerge(list *list_a, list *list_b)
  * 	l: lista a imprimir
  */
 void listPrint(list *l_) {
-
-	/*if (l_->size==0) */
-		/*printf("Empty list\n"); */
-	/*else */
 	if (l_->size > 0) {
 		node *dummie = l_->head;
 		
 		while (dummie != NULL ) { 
-
-			/*printf("%s %d",dummie->word,dummie->frequency); */
-			/*printf("%s ",dummie->word); */
-			/*printf("%d\n",dummie->frequency);*/
 			fprintf(stderr,"%s %d\n",dummie->word,dummie->frequency);
-			/*implementacion que usa file descriptors*/
-			/*dprintf(fd,"%s %d",dummie->word,dummie->frequency);*/
 			if (l_->head == l_->tail) 
 				break ;
 			dummie = dummie->next;
