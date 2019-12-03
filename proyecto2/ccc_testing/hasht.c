@@ -56,32 +56,33 @@ int hashtInsert(hasht h_, int number){
 	int index; 
 	snode *dummie; 
 
-	dummie = (snode *) malloc( sizeof(snode) );
-	snodeInit(dummie, number);
-
 	index = number % HASH_SIZE; 	
+
 
 	if (h_[index] != NULL ) { 
 
+		/*printf("list h_[%d] :\tsize: %d | number: %d\n",index, h_[index]->size, number); */
+
 		if ( singlySearch(h_[index], number)  ){ 
 			/*la tabla no acepta elementos repetidos*/
-			printf("Already in here\n");
 			return FALSE; 
 		}
 
-		singlyInsert( h_[index], dummie);  
 	}
 	else {
-		singly *new_list;
+		/*printf("new list h_[%d] :\tnumber: %d \n",index, number); */
 
-		new_list = (singly *) malloc( sizeof(singly) ); 
-		singlyInit(new_list); 
+		h_[index] = (singly *) malloc( sizeof(singly) );
 
-		singlyInsert(new_list, dummie); 
+		singlyInit( h_[index] );
 
-
-		h_[index] = new_list; 
 	}
+
+
+	dummie = (snode *) malloc( sizeof(snode) );
+	snodeInit(dummie, number);
+
+	singlyInsert( h_[index], dummie);  
 
 	return TRUE;
 }

@@ -92,6 +92,7 @@ int singlySearch(singly *l_, int number) {
 	int i_; 
 	snode *dummie; 
 
+
 	dummie = l_->head; 
 	for(i_=0; i_<l_->size; i_++) {
 		

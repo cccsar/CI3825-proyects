@@ -9,7 +9,7 @@
 #define __HASHT__
 
 /*constant for testing*/
-#define HASH_SIZE 499
+#define HASH_SIZE 419
 
 /* hasht
  * --------------

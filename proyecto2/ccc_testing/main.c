@@ -192,6 +192,7 @@ int main (int argc, char **argv) {
 	}
 
 	n_files = myFind(argv[2], paths); 
+	printf("numero de archivos encontrados: %d\n",n_files);
 
 
 	/*	Calculo el numero de procesos a usar 	*/

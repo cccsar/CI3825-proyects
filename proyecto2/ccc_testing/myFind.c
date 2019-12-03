@@ -24,7 +24,30 @@
 #define FALSE 0
 #define MAX_PATHNAME 5000
 #define INODE_SIZE 20
+
 #define MAX_FILES 419
+#define REG_SIZE 300
+
+
+
+/* extendWords
+ * --------------
+ *
+ *
+ */
+char** extendWords(char** paths, int next_ceil) { 
+	char** newpaths; 
+	
+	printf("previous size: %d\t address:%p\n",next_ceil, (void*)paths); 
+	printf("previous address %p\n",(void*)paths);
+	if( ( newpaths = (char**) realloc(paths, sizeof(char*) * (next_ceil + REG_SIZE) ) ) == NULL)
+		perror("realloc");
+
+	printf("new size: %d\taddress: %p\n", next_ceil + REG_SIZE, (void*)newpaths ); 
+
+	return newpaths; 
+
+}
 
 
 /* isTxt
@@ -38,11 +61,6 @@ int isTxt(char *name) {
 	if ( n>4 && (name[n-1] == 't') && (name[n-3] == 't') && (name[n-2] == 'x') && (name[n-4] == '.') ) {
 		return TRUE; 
 	}
-	/* o tambien se puede usar 
-	if (strstr(name, ".txt") ){ 
-		return TRUE; 
-	}
-	*/
 
 	return FALSE; 
 }
@@ -56,59 +74,79 @@ int isTxt(char *name) {
 int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) { 
 
 	int len, term, help; 
-	char path[MAX_PATHNAME], pathname[MAX_PATHNAME], curr_inode[INODE_SIZE]; 
+	char path[MAX_PATHNAME], pathname[MAX_PATHNAME]; 
 	DIR *curr_dir;
 	struct dirent *current_ent; 
 	struct stat current_st; 
 
+
+	help = 0;
 	term = 0;
 	strcpy(path, dirname); 
+	printf("dirname %s\n",dirname); 
 
 	while( (current_ent=readdir(dir)) != NULL ) { 
 
 		if( strcmp(current_ent->d_name,".")!=0 && strcmp(current_ent->d_name,"..")!=0) 
 		{
 			strcpy(pathname, path); 		
-			
 			len = strlen( pathname ) ;
 
+			printf("pathanme intermedio %s\n", pathname);
 			if (pathname[len-1] != '/')
 				strcat(pathname,"/"); 
 
+			printf("vaina maldita: %s\n",current_ent->d_name);
 			/* Extiendo el pathname para que incluya el nombre de la 
 			 * entrada actual */
 			strcat(pathname, current_ent->d_name);	
 
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
+			/*printf("pathname: %s\n",pathname); */
 			
+			/*Se ignoraran links simbolicos*/
+			if ( S_ISREG(current_st.st_mode) && isTxt(current_ent->d_name) &&
+					(hashtInsert(inodes,current_st.st_ino) == TRUE) ) {
 
-			if ( S_ISREG(current_st.st_mode) || S_ISLNK(current_st.st_mode) )  {
+							/*###*/
+				if ( (MAX_FILES % (ind + term + 1) == 0) && (ind + term != 0) )   {
 
-				/*esto podria ser una funcion###*/
-				if (isTxt(current_ent->d_name)) {
+					printf("entro a arreglar\n");
 
-					if( hashtInsert(inodes, current_st.st_ino) == TRUE )  {
-						/*pido el espacio exacto para cada string*/
-						paths[ind+term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
-						/*copio el string, puede traer problemas###*/
-						strcpy(paths[ind+term],pathname);
-						term++;
-					}	
+					paths = extendWords(paths, ind + term + 1); 
+					printf("salio de arreglar\n");
+
 				}
+
+
+
+					/*pido el espacio exacto para cada string*/
+				paths[ind+term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
+				/*printf("paths:%p \t paths[%d]: %p\n",(void *) paths,ind+term, (void *)paths[ind+term]); */
+
+				if (paths[ind+term] == NULL)
+					perror("malloc");
+				/*copio el string, puede traer problemas###*/
+
+
+				strcpy(paths[ind+term],pathname);
+				term++;
 			}
 			else if ( S_ISDIR(current_st.st_mode) ) {
-			  	curr_dir = opendir(pathname); 
+
+			  	if( (curr_dir = opendir(pathname) ) == NULL)
+					perror("curr_dir ");
 
 				/*esto resolvio el problema de la acumularcion*/
-			 	term +=traverseDir(curr_dir, pathname, inodes, paths, ind + term ); 
+				printf("dirname antes de llamada %s\n",pathname); 
+			 	term += traverseDir(curr_dir, pathname, inodes, paths, ind + term ); 
 
 				closedir(curr_dir);
 			}
 
 		}
 	}
-
 
 	help += term;
 	return help;  
