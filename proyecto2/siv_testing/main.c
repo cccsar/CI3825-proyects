@@ -7,147 +7,156 @@
 
 #include "list.h"
 
-#define MAX 10
 #define WORD_SIZE 20
+#define MAX_THREADS 1000
+#define ARGV_DESP 3
+#define SEM_COUNT 1
+#define SEM_SHARED_WITH 0
 
-/*Estructura de un hilo*/
-struct thread_vars_t
-{
-    /*Atributos*/
-    int num_args;
-    int num_files;
-    char** files;
-    /*Semaforo*/
-    sem_t semaphore;
-};
+/*Estructura global de hilos*/
+typedef struct thread_vars_struct{
+    char **files;
+	list *main_list;
+	int num_files;
+}thread_vars_t;
 
-void memoryError() {
-	perror("Error, memoria insuficiente\n");
-}
+/*Variables globales*/
+int global_index;
+sem_t sem_merge;
+sem_t sem_index;
 
-/*Funcion que maneja el hilo*/
 void *test(void *arg)
 {
-    struct thread_vars_t *vars;
+    thread_vars_t *vars;
     FILE *fp; 
-	int i,j, fd;
+	int index;
 	char *current_word;
 	node *space;
 	list *my_list;
 
-    vars = arg;
-
-	if (vars->num_args != atoi(vars->files[2]) + 3) { 
-		perror("Error, el formato es:\t ./freecpal <numero de archivos>"
-			" {lista de nombre de archivos}\n"); 
-		exit(-1); 
-	}
-
- 	my_list = (list*) malloc( sizeof(list) );
+    vars = (thread_vars_t*)arg;
+	
+	my_list = (list*)malloc(sizeof(list));
 	if (!my_list) {
-		memoryError();
 		exit(-2);
 	}
 	listInit(my_list);
 
-	for(i = 3; i < atoi(vars->files[1])+3; i++) { 
-		if (!(fp = fopen(vars->files[i],"r")) ){
-			dprintf(stderr, "%s",vars->files[i]);
-			perror("fopen"); 
-			exit(-3); 
+	do
+	{
+		sem_wait(&sem_index);
+			index = (isFileAvailable(vars->num_files) == 1) ? global_index : -1;
+		sem_post(&sem_index);
+		
+		if(index == -1){
+			break;
 		}
 
-		/*Se reserva espacio para la primera palabra del archivo*/
+		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r")) ){ 
+			/*Bad*/
+		}
+		
 		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
 		if (!current_word) {
-			memoryError();	
-			exit(-2);
+			/*Bad*/
 		}
-	
-		while( fscanf(fp,"%s",current_word) != EOF) { 
 
-			space = (node*) malloc( sizeof(node) ) ; 
+		while(fscanf(fp,"%s",current_word) != EOF) { 
+			space = (node*)malloc(sizeof(node)); 
 			if(!space) {
-				memoryError(); 	
-				exit(-2);
+				/*Bad*/
 			}
 
 			nodeInit(space, current_word, 0); 
 
-			/*En caso de que solo la frecuencia de un elemento */
-			/* se aumente como ese nodo ya esta creado, se libera*/
-			/* la memoria que se almaceno para insertarlo.*/
 			if (listInsert(my_list, space) < 0) {
 				free(space);
 				free(current_word);
 			}
 
-			/*Se reserva espacio para la i-esima palabra*/ 
-			/* del archivo*/
 			current_word = (char*) malloc(WORD_SIZE*sizeof(char)); 			
 			if(!current_word) {
-				memoryError(); 
-				exit(-2); 
+				/*Bad*/
 			}
 		}
-	}
 
-    listSort(my_list);
+		listSort(my_list);
+		sem_wait(&sem_merge);
+			/*printf("----------\n");
+			listPrint(my_list);
+			printf("----------\n");*/
+			listMerge(vars->main_list, my_list);
+		sem_post(&sem_merge);
 
-    /*El semaforo esta en rojo (Bloqueo)*/
-    sem_wait(&vars->semaphore);
-    
-    /*Llamada a merger*/
-    /*Region critica*/
+		free(current_word);
+		free(my_list);
+	} while (index == 1);
 
-    /*El semaforo esta en verde (Desbloqueo)*/
-    sem_post(&vars->semaphore);
-	
-	listPrint(my_list);
-	free(my_list);
-
-    /*El hilo termina*/
-    /*pthread_exit((void *)big_value);*/
+	pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[]) 
-{
-    /*Estructura del hilo*/
-    struct thread_vars_t *vars = malloc (sizeof(struct thread_vars_t));
-    /*Arreglo de hilos*/
-    pthread_t t_ids[MAX];
-    /*Variables*/
-    int i, value;
+int isFileAvailable(int n){
+	if(global_index < n - 1){
+		global_index++;
+		return 1;
+	}else{
+		return -1;
+	}
+}
 
-    /*Inicializacion del semaforo*/
-    sem_init(&vars->semaphore, 0, 1);
+int main(int argc, char *argv[]){
+	thread_vars_t *thread_vars;
+	list *main_list;
+    pthread_t t_ids[MAX_THREADS];
+    int i, n_thread, n_files;
 
-    /*Inicializacion de los atributos del hilo*/
+	thread_vars = (thread_vars_t*)malloc(sizeof(thread_vars));
+	main_list = (list*)malloc(sizeof(list));
+
+	n_thread = atoi(argv[1]);
+	n_files = atoi(argv[2]);
+	global_index = -1;
+	
+	if(n_thread > MAX_THREADS){
+		/*Error*/
+		free(thread_vars);
+		free(main_list);
+		exit(-1);
+	}
+	
+	listInit(main_list);
+	sem_init(&sem_index, SEM_SHARED_WITH, SEM_COUNT);
+	sem_init(&sem_merge, SEM_SHARED_WITH, SEM_COUNT);
+	
+	thread_vars->files = argv;
+	thread_vars->main_list = main_list;
+	thread_vars->num_files = n_files;
+
+	n_thread = (n_thread >= n_files ? n_files : n_thread);
 
     /*Creacion de los hilos con la funcion test*/
-    for (i = 0; i < MAX; i++) 
-    {
-        if (pthread_create(&t_ids[i], NULL, *test, vars) != 0)
-        {        
+    for (i = 0; i < n_thread; i++){
+        if (pthread_create(&t_ids[i], NULL, *test, thread_vars) != 0){        
             printf("NO CREATE\n");
         }
     }
-
+	
     /*Se realiza la espera de los hilos*/
-    for (i = 0; i < MAX; i++) 
-    {
-        /*Valor de retorno del hilo*/
-        void *value;
-
-        if (pthread_join(t_ids[i], &value) != 0)
-        {
+    for (i = 0; i < n_thread; i++) {
+        if (pthread_join(t_ids[i], NULL) != 0){
             printf("NO JOIN\n");
         }
     }
+	
+	/*Muestra del contenido de la lista*/
+	listPrint(main_list);
 
-    /*El hilo termina*/
+	/*Se libera la memoria*/
+    sem_destroy(&sem_index);
+	sem_destroy(&sem_merge);
+	free(main_list);
+	free(thread_vars);
+
+	/*El hilo termina*/
     pthread_exit(NULL);
-
-    /*Se libera la memoria del semaforo*/
-    sem_destroy(&vars->semaphore);
 }

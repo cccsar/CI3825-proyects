@@ -1,12 +1,2 @@
-carlos
-alejandro
-sivira
-munoz
-esta
-haciendo
-un
-proyecto
-de
-sistemas
-de
-operacion
+A
+B

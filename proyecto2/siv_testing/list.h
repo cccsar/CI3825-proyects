@@ -45,6 +45,17 @@ void nodeInit(node *e, char *c, int f);
  */
 void nodeSwap(node *u, node *v);
 
+/*  Funcion: nodeCompare
+ *  --------------
+ *	Compara si un nodo es mayor a otro en funcion de su frecuecia y orden 
+ *  alfanumerico.
+ *
+ *	a: apuntador a un nodo.
+ *  b: apuntador a un nodo.
+ * 
+ *  return: 1 si a > b. -1 si a < b. 0 si a = b.
+ */
+int nodeCompare(node *a, node *b);
 
 /*Tipo: list
  *------------
@@ -94,6 +105,17 @@ node* listSearch(list *l, node *e);
  */
 int listInsert(list *l, node *e);
 
+/*Funcion: listInsertBetween
+ * ------------
+ *	Inserta un elemento en una posicion especifica de la lista. 
+ *
+ *	l: apuntador a la lista en donde se insertara el elemento.
+ *  p: apuntador al elemento padre del elemento a insertar.
+ *	e: apuntador al elemento a insertar.
+ *
+ *	retorna: void
+ */
+void listInsertBetween(list *l, node *p, node *e);
 
 /*Funcion: listSort
  * ------------
@@ -103,6 +125,16 @@ int listInsert(list *l, node *e);
  */
 void listSort(list *l);
 
+/*  Funcion: listMerge
+ *  --------------
+ *	Convina de forma ordenada dos listas.
+ *
+ *	list_a: Lista de palabras con orden alfanumerico y por frecuencia.
+ *  list_b: Lista de todas las palabras con orden alfanumerico y por frecuencia.
+ * 
+ *  return: void.
+ */
+void listMerge(list *list_a, list *list_b);
 
 /*Funcion: listPrint
  *------------
