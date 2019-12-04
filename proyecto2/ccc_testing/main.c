@@ -32,7 +32,7 @@
 
 #define WORD_SIZE 20
 
-#define STANDARD_SIZE 419
+#define STANDARD_SIZE 419 
 
 #define SMP0 "/mutex"
 #define SMP1 "/sem_reader"
@@ -68,7 +68,7 @@ void countFrequencies(list *my_list, char** paths, int floor, int ceil, int refe
 
 
 	for(j_=floor*reference; j_ < floor*reference + ceil   ; j_++) { 
-		fprintf(stderr,"i_=%d\n",j_);
+		/*fprintf(stderr,"i_=%d\n",j_);*/
 	
 
 		if ( !(fp = fopen(paths[j_],"r")) ){
@@ -193,8 +193,9 @@ int main (int argc, char **argv) {
 		exit(-1); 
 	}
 
-	n_files = myFind(argv[2], paths); 
+	n_files = myFind(argv[2], &paths); 
 	printf("numero de archivos encontrados: %d\n",n_files);
+	printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));
 
 
 	/*	Calculo el numero de procesos a usar 	*/
@@ -339,7 +340,7 @@ int main (int argc, char **argv) {
 
 						exit(-1);
 					}
-					read(0, word, *word_size);
+					read(0, word, *word_size + 1);
 
 					/*leo la frecuencia*/
 					read(0, &frequency, sizeof(int) );

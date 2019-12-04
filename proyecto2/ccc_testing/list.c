@@ -300,7 +300,7 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 					perror("write");
 				
 				/*Escribo la palabra al pipe*/
-				if( write(1, dummie->word, *word_size)  == -1)
+				if( write(1, dummie->word, *word_size + 1)  == -1)
 					perror("write");
 
 				/*Escribo la frecuencia de la palabra al pipe*/

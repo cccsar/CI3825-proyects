@@ -15,13 +15,20 @@
 
 #include "hasht.h"
 
+/*
+ * --------------
+ *
+ *
+ */
+int arrangeMod(int a, int b); 
+
 
 /*
  * --------------
  *
  *
  */
-void extendWord(char** paths, int next_ceil); 
+void extendWord(char*** paths, int next_ceil); 
 
 /* isTxt
  * --------------
@@ -36,7 +43,7 @@ int isTxt(char *name) ;
  *
  *
  */
-void traverseDir(DIR *dir, char *dirname, hasht *inodes, char* paths, int ind) ; 
+void traverseDir(DIR *dir, char *dirname, hasht *inodes, char*** paths, int ind) ; 
 
 
 /* myFind
@@ -44,5 +51,5 @@ void traverseDir(DIR *dir, char *dirname, hasht *inodes, char* paths, int ind) ;
  *
  *
  */
-int myFind (char *dirname, char** Paths) ; 
+int myFind (char *dirname, char*** Paths) ; 
 #endif
