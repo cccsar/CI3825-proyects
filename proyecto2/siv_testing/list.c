@@ -113,10 +113,9 @@ void listInit(list *l) {
 node* listSearch(list *l, node *e) {
 
 	/*dummie actua como un iterador sobre los elementos de la lista*/
-	node *dummie = l->head; 	
-
+	node *dummie = l->head;
 	while(dummie != NULL) {
-		
+		printf("%i: %s -- %s\n", l, dummie->word, e->word);
 		if(strcmp(dummie->word, e->word) == 0){
 			return dummie;
 		}
@@ -140,27 +139,23 @@ node* listSearch(list *l, node *e) {
  *	aumento su frecuencia
  */
 int listInsert(list *l, node *e) {
-
-	if (l->size == 0) 
-	{
+	if (l->size == 0) {
 		l->head = e; 
 		l->tail = e;
-		e->frequency++;
-
+		/*e->frequency++;*/
 	}
 	else {
-		node *contains = listSearch(l, e); 
-		
-		if (contains != NULL) 
-		{
+		node *contains = listSearch(l, e);
+		if (contains != NULL) {
+			/*contains->frequency++;*/
 			contains->frequency += e->frequency; 
 			return -1;
 		}
 		else {
-			(l->tail)->next = e; 
+			l->tail->next = e; 
 			e->prev = l->tail; 
 			l->tail = e; 
-			e->frequency++;
+			/*e->frequency++; */
 		}
 	}
 	l->size++; 

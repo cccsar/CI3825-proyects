@@ -67,7 +67,7 @@ int nodeCompare(node *a, node *b);
  */
 typedef struct {
 	node *head, *tail; 
-	int size; 
+	int size;
 } list;
 
 

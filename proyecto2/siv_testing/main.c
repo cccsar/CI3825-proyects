@@ -25,8 +25,7 @@ int global_index;
 sem_t sem_merge;
 sem_t sem_index;
 
-void *test(void *arg)
-{
+void *test(void *arg){
     thread_vars_t *vars;
     FILE *fp; 
 	int index;
@@ -38,7 +37,7 @@ void *test(void *arg)
 	
 	my_list = (list*)malloc(sizeof(list));
 	if (!my_list) {
-		exit(-2);
+		pthread_exit(NULL);
 	}
 	listInit(my_list);
 
@@ -49,48 +48,53 @@ void *test(void *arg)
 		sem_post(&sem_index);
 		
 		if(index == -1){
-			break;
+			/*printf("BAD INDEX: %i\n", index);*/ 
+			pthread_exit(NULL);
 		}
 
-		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r")) ){ 
-			/*Bad*/
+		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r"))){ 
+			printf("BAD FOPEN: %i\n", fp);
+			pthread_exit(NULL);
 		}
 		
-		current_word = (char*) malloc(WORD_SIZE*sizeof(char));
+		current_word = (char*)malloc(WORD_SIZE*sizeof(char));
 		if (!current_word) {
-			/*Bad*/
+			printf("BAD CURRENT WORD MALLOC: %i\n", current_word);
+			pthread_exit(NULL);
 		}
-
+		
 		while(fscanf(fp,"%s",current_word) != EOF) { 
 			space = (node*)malloc(sizeof(node)); 
 			if(!space) {
-				/*Bad*/
+				printf("BAD SPACE MALLOC: %i\n", space);
+				pthread_exit(NULL);
 			}
 
-			nodeInit(space, current_word, 0); 
+			nodeInit(space, current_word, 0);
 
 			if (listInsert(my_list, space) < 0) {
-				free(space);
-				free(current_word);
+				/*free(space);
+				free(current_word);*/
 			}
-
-			current_word = (char*) malloc(WORD_SIZE*sizeof(char)); 			
+			
+			current_word = (char*)malloc(WORD_SIZE*sizeof(char)); 			
 			if(!current_word) {
-				/*Bad*/
+				printf("BAD CURRENT WORD MALLOC 2: %i\n", current_word);
+				pthread_exit(NULL);
 			}
 		}
-
+		
 		listSort(my_list);
 		sem_wait(&sem_merge);
 			/*printf("----------\n");
 			listPrint(my_list);
 			printf("----------\n");*/
-			listMerge(vars->main_list, my_list);
+			/*listMerge(vars->main_list, my_list);*/
 		sem_post(&sem_merge);
 
 		free(current_word);
 		free(my_list);
-	} while (index == 1);
+	} while (index >= 0);
 
 	pthread_exit(NULL);
 }
@@ -114,7 +118,7 @@ int main(int argc, char *argv[]){
 	main_list = (list*)malloc(sizeof(list));
 
 	n_thread = atoi(argv[1]);
-	n_files = atoi(argv[2]);
+	n_files = (int)atoi(argv[2]);
 	global_index = -1;
 	
 	if(n_thread > MAX_THREADS){
@@ -139,6 +143,7 @@ int main(int argc, char *argv[]){
         if (pthread_create(&t_ids[i], NULL, *test, thread_vars) != 0){        
             printf("NO CREATE\n");
         }
+		printf("CREATE\n");
     }
 	
     /*Se realiza la espera de los hilos*/
@@ -146,10 +151,11 @@ int main(int argc, char *argv[]){
         if (pthread_join(t_ids[i], NULL) != 0){
             printf("NO JOIN\n");
         }
+		printf("JOIN\n");
     }
 	
 	/*Muestra del contenido de la lista*/
-	listPrint(main_list);
+	/*listPrint(main_list);*/
 
 	/*Se libera la memoria*/
     sem_destroy(&sem_index);
