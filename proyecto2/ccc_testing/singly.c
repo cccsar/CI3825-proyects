@@ -46,7 +46,6 @@ void singlyInit(singly *l_) {
  *
  */
 void singlyDestroy(singly *l_) {
-	int i_; 
 	snode *killed, *dummie; 
 
 	if (l_->size >= 1 ) {
@@ -157,6 +156,5 @@ void singlyTesting() {
 	/*print it	*/
 
 
-	/*free goes here*/
 	singlyDestroy(l_);
 }

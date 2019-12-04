@@ -200,13 +200,12 @@ int myFind (char *dirname, char ***paths) {
 	}
 
 
-	fprintf(stderr,"final address within myFind: %p\n", (void *)*paths); 
+	/*fprintf(stderr,"final address within myFind: %p\n", (void *)*paths); */
 	hashtDestroy(inodes);
 
 	  /* Paths de los archivos encontrados   */
 	/*for(i_=0; i_<n_paths; i_++)   */
-		/*printf("%s\n",paths[i_]);   */
-
+		/*printf("%s\n",paths[0][i_]);   */
 	return n_paths;
 
 
