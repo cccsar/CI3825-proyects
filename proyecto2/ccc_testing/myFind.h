@@ -9,11 +9,19 @@
  *
  */
 
+
 #ifndef __MY_FIND__
 #define __MY_FIND__
 
 #include "hasht.h"
 
+
+/*
+ * --------------
+ *
+ *
+ */
+void extendWord(char** paths, int next_ceil); 
 
 /* isTxt
  * --------------

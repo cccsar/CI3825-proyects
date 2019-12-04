@@ -8,7 +8,7 @@ main.o: main.c myFind.h list.h
 	gcc ${OPTS} -c main.c -pthread 
 
 myFind.o: myFind.c myFind.h hasht.h
-	gcc ${OPTS} -c myFind.c
+	gcc ${OPTS} -c myFind.c -pthread
 
 hasht.o: hasht.c hasht.h singly.h
 	gcc ${OPTS} -c hasht.c

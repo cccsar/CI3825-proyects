@@ -22,38 +22,45 @@
 
 #define TRUE 1
 #define FALSE 0
-#define MAX_PATHNAME 5000
-#define INODE_SIZE 20
 
-#define MAX_FILES 419
+#define MAX_PATHNAME 5000
+
+#define STANDARD_SIZE 419
 #define REG_SIZE 300
 
 
 
 /* extendWords
  * --------------
+ *	Actualiza la memoria aloja para un arreglo de string si se acerca a
+ *	un multiplo de su tamano alojado actual
  *
+ *
+ *	paths: arreglo de strings
+ *	next_ceil: multiplo de su tamano actual
  *
  */
 char** extendWords(char** paths, int next_ceil) { 
 	char** newpaths; 
 	
 	printf("previous size: %d\t address:%p\n",next_ceil, (void*)paths); 
-	printf("previous address %p\n",(void*)paths);
+
 	if( ( newpaths = (char**) realloc(paths, sizeof(char*) * (next_ceil + REG_SIZE) ) ) == NULL)
 		perror("realloc");
 
 	printf("new size: %d\taddress: %p\n", next_ceil + REG_SIZE, (void*)newpaths ); 
+	return newpaths;
 
-	return newpaths; 
 
 }
 
 
 /* isTxt
  * --------------
+ * 	Verifica que el sufijo de un string sea ".txt"
  *
  *
+ * 	name: string cuyo sufijo se verifica
  */
 int isTxt(char *name) { 
 	int n = strlen(name); 
@@ -85,7 +92,7 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 	strcpy(path, dirname); 
 	printf("dirname %s\n",dirname); 
 
-	while( (current_ent=readdir(dir)) != NULL ) { 
+	while( (current_ent = readdir(dir)) != NULL ) { 
 
 		if( strcmp(current_ent->d_name,".")!=0 && strcmp(current_ent->d_name,"..")!=0) 
 		{
@@ -103,18 +110,18 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
-			/*printf("pathname: %s\n",pathname); */
+			printf("pathname: %s\n",pathname); 
 			
 			/*Se ignoraran links simbolicos*/
 			if ( S_ISREG(current_st.st_mode) && isTxt(current_ent->d_name) &&
 					(hashtInsert(inodes,current_st.st_ino) == TRUE) ) {
 
 							/*###*/
-				if ( (MAX_FILES % (ind + term + 1) == 0) && (ind + term != 0) )   {
+				if ( (STANDARD_SIZE % (ind + term + 1) == 0) && (ind + term != 0) )   {
 
 					printf("entro a arreglar\n");
 
-					paths = extendWords(paths, ind + term + 1); 
+					extendWords(paths, ind + term + 1); 
 					printf("salio de arreglar\n");
 
 				}
@@ -124,6 +131,7 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 					/*pido el espacio exacto para cada string*/
 				paths[ind+term] = (char* ) malloc( sizeof(char) * strlen(pathname) + 1); 
 				/*printf("paths:%p \t paths[%d]: %p\n",(void *) paths,ind+term, (void *)paths[ind+term]); */
+				printf("current number of files stored: %d\n", ind + term); 
 
 				if (paths[ind+term] == NULL)
 					perror("malloc");
@@ -133,12 +141,11 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 				strcpy(paths[ind+term],pathname);
 				term++;
 			}
-			else if ( S_ISDIR(current_st.st_mode) ) {
+			else if ( S_ISDIR(current_st.st_mode) && !S_ISLNK(current_st.st_mode) ) {
 
 			  	if( (curr_dir = opendir(pathname) ) == NULL)
 					perror("curr_dir ");
 
-				/*esto resolvio el problema de la acumularcion*/
 				printf("dirname antes de llamada %s\n",pathname); 
 			 	term += traverseDir(curr_dir, pathname, inodes, paths, ind + term ); 
 
@@ -168,14 +175,13 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char** paths, int ind) {
 int myFind (char *dirname, char **paths) { 
 
 	int i_, n_paths;
-	/*char **paths; */
 	DIR *dir; 
 	struct stat d_stat; 	
 	hasht inodes; 
 
-	/* se asume maximo de archivos por ahora ###*/
-	/*paths = (char **) malloc( sizeof(char*) * MAX_FILES ); */
+
 	hashtInit(inodes); 
+
 
 	if ( stat(dirname, &d_stat) == -1 )
 		perror("stat"); 
@@ -190,19 +196,16 @@ int myFind (char *dirname, char **paths) {
 		n_paths = traverseDir(dir, dirname, inodes, paths, 0); 
 	}
 
-	/*printf("n_paths %d\n",n_paths); */
-	  /* Paths de los archivos encontrados   */
-	/*for(i_=0; i_<n_paths; i_++)   */
-		/*printf("%s\n",paths[i_]);   */
-
-	/*pilas*/
-	return n_paths;
-
-	/*frees*/
+	fprintf(stderr,"final address: %p\n", (void *)paths); 
+	fprintf(stderr,"n: %d\n",n_paths);
 	hashtDestroy(inodes);
+
+	  /* Paths de los archivos encontrados   */
 	for(i_=0; i_<n_paths; i_++)   
-		free(paths[i_]);
-	free(paths);
+		printf("%s\n",paths[i_]);   
+
+	exit(0);
+	/*return n_paths;*/
 
 
 }

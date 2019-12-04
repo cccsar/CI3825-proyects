@@ -29,9 +29,10 @@
 #define READ 0
 
 #define MAX_PS 1000 
-#define MAX_FILES 419 
 
 #define WORD_SIZE 20
+
+#define STANDARD_SIZE 419
 
 #define SMP0 "/mutex"
 #define SMP1 "/sem_reader"
@@ -67,6 +68,7 @@ void countFrequencies(list *my_list, char** paths, int floor, int ceil, int refe
 
 
 	for(j_=floor*reference; j_ < floor*reference + ceil   ; j_++) { 
+		fprintf(stderr,"i_=%d\n",j_);
 	
 
 		if ( !(fp = fopen(paths[j_],"r")) ){
@@ -185,7 +187,7 @@ int main (int argc, char **argv) {
 
 
 	/*	 Ubico los archivos a procesar		*/
-	paths = (char**) malloc(sizeof(char*) * MAX_FILES); /*perror*/
+	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE); /*perror*/
 	if (paths == NULL ) { 
 		perror("malloc");
 		exit(-1); 

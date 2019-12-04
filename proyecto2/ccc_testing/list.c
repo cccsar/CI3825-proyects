@@ -233,55 +233,36 @@ void listPrint(list *l_) {
  *
  */
 void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
-	int *w_controller, *word_size, *frequency, i_; 
-	char *this_word; 
+	int *w_controller, *word_size, i_; 
 
 
 	w_controller = (int *) malloc( sizeof(int) );
-	if (w_controller == NULL) {
+	if (w_controller == NULL) 
 		perror("malloc"); 
 
-		exit(-1) ; 
-	}
 	word_size = (int *) malloc( sizeof(int) );
-	if ( word_size == NULL ) { 
+	if ( word_size == NULL )  
 		perror("malloc"); 
-
-		exit(-1); 
-	}
-	frequency = (int*) malloc( sizeof(int) );
-	if ( frequency == NULL ) { 
-		perror("malloc"); 
-
-		exit(-1); 
-	}
 
 
 	if (l_->size==0)  {
 
-		if( sem_wait(reader)  == -1) {
+		if( sem_wait(reader)  == -1) 
 			perror("sem_wait");
 
-			exit(-2);
-		}
 
-		if( sem_wait(mutex)  == -1) {
+		if( sem_wait(mutex)  == -1) 
 			perror("sem_wait");
-
-			exit(-2); 
-		}
 
 		*w_controller = -1; 
 
 		write(1, w_controller, sizeof(int) ); 
 
-		if( sem_post(mutex)  == -1);  {
-			perror("sem_post"); /* ### BUG*/
-		}
+		if( sem_post(mutex) == -1 ) 
+			perror("sem_post"); 
 
-		if( sem_post(writer)  == -1) {
+		if( sem_post(writer)  == -1) 
 			perror("sem_post"); /* ### BUG*/
-		}
 
 	}
 	else if (l_->size > 0) {
@@ -319,31 +300,22 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 					perror("write");
 				
 				/*Escribo la palabra al pipe*/
-				this_word = (char*) malloc( sizeof(char) * (*word_size) );
-				this_word = dummie->word; 
-				if( write(1, this_word, *word_size)  == -1)
+				if( write(1, dummie->word, *word_size)  == -1)
 					perror("write");
 
 				/*Escribo la frecuencia de la palabra al pipe*/
-				*frequency = dummie->frequency; 
-				if( write(1, frequency, sizeof(int))  == -1)
+				if( write(1, &dummie->frequency, sizeof(int))  == -1)
 					perror("write");
 
 			/*********************FIN DE LA REGION CRITICA	*********************/
 
 			}
 
-			if( sem_post(mutex) == -1) {
+			if( sem_post(mutex) == -1) 
 				perror("sem_post");
 
-				exit(-2); 
-			}
-
-			if( sem_post(writer) == -1) {
+			if( sem_post(writer) == -1) 
 				perror("sem_post");
-
-				exit(-2); 
-			}
 	
 
 			if( dummie != NULL ) 
@@ -353,6 +325,9 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 		}
 
 	}
+
+	free(w_controller); 
+	free(word_size);
 
 
 } 
