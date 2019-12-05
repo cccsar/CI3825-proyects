@@ -1,8 +1,8 @@
 
 OPTS=-ansi -g -Wpedantic -pthread
 
-freecpalhilo: main.o  myFind.o hasht.o singly.o list.o
-	gcc ${OPTS} -o freecpalhilo main.o myFind.o hasht.o singly.o list.o -pthread
+frecpalhilo: main.o  myFind.o hasht.o singly.o list.o
+	gcc ${OPTS} -o frecpalhilo main.o myFind.o hasht.o singly.o list.o -pthread
 
 main.o: main.c myFind.h list.h
 	gcc ${OPTS} -c main.c -pthread 
