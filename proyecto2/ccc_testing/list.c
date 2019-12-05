@@ -202,7 +202,7 @@ void listPrint(list *l_) {
 		
 		while (dummie != NULL ) { 
 
-			printf("%s %d \n",dummie->word,dummie->frequency); 
+			printf("%s %d\n",dummie->word,dummie->frequency); 
 			if (l_->head == l_->tail) 
 				break ;
 			dummie = dummie->next;
@@ -234,6 +234,7 @@ void listPrint(list *l_) {
  */
 void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 	int *w_controller, *word_size, i_; 
+	node *dummie, *cached; 
 
 
 	w_controller = (int *) malloc( sizeof(int) );
@@ -262,11 +263,11 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 			perror("sem_post"); 
 
 		if( sem_post(writer)  == -1) 
-			perror("sem_post"); /* ### BUG*/
+			perror("sem_post");
 
 	}
 	else if (l_->size > 0) {
-		node *dummie = l_->head;
+		dummie = l_->head;
 		
 		for( i_=0; i_<l_->size + 1 ; i_++) { 
 
@@ -307,6 +308,7 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 				if( write(1, &dummie->frequency, sizeof(int))  == -1)
 					perror("write");
 
+				free(dummie->word); 
 			/*********************FIN DE LA REGION CRITICA	*********************/
 
 			}
@@ -318,8 +320,11 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 				perror("sem_post");
 	
 
-			if( dummie != NULL ) 
+			if( dummie != NULL )  {
+				cached = dummie; 
 				dummie = dummie->next;
+				free(cached);
+			}
 			
 
 		}
@@ -328,8 +333,6 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 
 	free(w_controller); 
 	free(word_size);
-
-
 } 
 
 

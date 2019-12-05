@@ -1,5 +1,5 @@
 
-OPTS=-ansi -g -Wpedantic
+OPTS=-ansi -g -Wall -Wpedantic
 
 freecpalproc: main.o  myFind.o hasht.o singly.o list.o
 	gcc ${OPTS} -o freecpalproc main.o myFind.o hasht.o singly.o list.o -pthread

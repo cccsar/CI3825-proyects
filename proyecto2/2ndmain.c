@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <sys/types.h> 
 #include <sys/stat.h> 
-#include <sys/wait.h>
 #include <fcntl.h>  
 #include <dirent.h> 
 #include <string.h> 
@@ -29,6 +28,8 @@
 #define WRITE 1
 #define READ 0
 
+#define MAX_PS 1000 
+
 #define WORD_SIZE 20
 
 #define STANDARD_SIZE 419 
@@ -40,6 +41,7 @@
 
 #define MIN(a,b) (a < b)? a: b;
 
+sem_t *mutex, *smp_r, *smp_w; 
 
 
 /* countFrequencies
@@ -59,60 +61,84 @@
  *
  */
 void countFrequencies(list *my_list, char** paths, int floor, int ceil, int reference) {
-	int j_; 
+	int j_, *word_size, *controller; 
 	FILE *fp; 
 
 	char* current_word; 
-	char* word_buffer; 
 	node *space;
+	struct stat fstat; 
 
-	word_buffer = (char *) malloc( sizeof(char) * WORD_SIZE + 1);
 
-	/*fprintf(stderr,"llego\tpid: %d\n", getpid());		*/
-	for(j_=floor*reference; j_ < floor*reference + ceil  ; j_++) { 
-		/*fprintf(stderr,"i_=%d\n",j_);*/
+	word_size = (int *) malloc( sizeof(int) );
+	controller = (int *) malloc( sizeof(int) ); 
+	current_word = (char *) malloc( sizeof(char) * WORD_SIZE + 1 );
+
+
+	for(j_=floor*reference; j_ < floor*reference + ceil   ; j_++) { 
 	
 
 		if ( !(fp = fopen(paths[j_],"r")) ){
 
-			fprintf(stderr, "%s",paths[j_]);
 			perror("fopen"); 
 		
 			exit(-3); 
 		}
-		/*fprintf(stderr,"llego\n");	*/
-		/*fprintf(stderr,"abrio %d\n", j_ - floor*reference);*/
 
-		while( fscanf(fp,"%s", word_buffer) != EOF) { 
+		if( lstat(paths[j_], &fstat)  == -1)
+			perror("lstat");
+		
+		*controller = 0;
+		while( fscanf(fp,"%s",current_word) != EOF) { 
+		
+			sem_wait(smp_r); 
+			sem_wait(mutex); 
+		
+			write(1, controller, sizeof(int)); 
 
+			*word_size = strlen(current_word); 
+			write(1, word_size, sizeof(int) ); 
+
+			write(1, current_word,  *word_size*sizeof(char) +  1);
+
+
+			sem_post(mutex); 
+			sem_post(smp_w); 
+			/*if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL ) {*/
+				/*perror("malloc");*/
+				/*exit(-2);*/
+			/*}*/
 		
-			if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL ) 
-				perror("malloc");
-		
-			if( (current_word = (char *) malloc( sizeof(char) * strlen(word_buffer) + 1 )) == NULL)
-				perror("current_word ");
-			strcpy(current_word, word_buffer); 
-			nodeInit(space, current_word, 1); 
+			/*nodeInit(space, current_word, 1); */
 		
 			/* En caso de que solo la frecuencia de un elemento 
 			 * se aumente como ese nodo ya esta creado, se libera
 			 * la memoria que se almaceno para insertarlo. */
-			if (listInsert(my_list, space) < 0) {
-				free(current_word);
-				free(space);
-			}
+			/*if (listInsert(my_list, space) < 0) {*/
+				/*free(space);*/
+				/*free(current_word);*/
+			/*}*/
 		
+			/* Se reserva espacio para la i-esima palabra 
+			 * del archivo */
 		
 		}
 
 		if( fclose(fp) == -1)
 			perror("fclose");
+
 		
-		free( paths[j_] );
 		
 	} 
+	*controller = -1; 
 
-	free(word_buffer);
+	sem_wait(smp_r); 
+	sem_wait(mutex); 
+	
+	write(1, controller, sizeof(int) );
+	
+	sem_post(mutex); 
+	sem_post(smp_w);
+
 
 }
 
@@ -129,27 +155,32 @@ int main (int argc, char **argv) {
 	char **paths ;
 
 	/*	Procesos 	*/
-	int status; 
+	int status[MAX_PS], merger_stat; 
+       	pid_t pid[MAX_PS], merger_pid; 
 	
 	/*	Pipe	*/
 	int pipe_fd[2]; 
 
 	/*	Semaforo	*/
-	sem_t *mutex, *smp_r, *smp_w; 
-	int  *r_controller; 
+	int *sem_deb, *r_controller; 
 	int trash;
 
 	/*	Proceso mezclador	 */
 	char* word; 
-	int terminated;
-	int* word_size, *frequency; 
+	int frequency, terminated;
+	int* word_size; 
 	list *freq_list; 
 	node *dummie; 
 
 	/*	Procesos contadores 	*/
+	int j_, k_; 
 	list *my_list;
+	int *deb_semval;
+	int whiler; 
 
+	int pid_dbg; 
 
+	deb_semval = (int *) malloc( sizeof(int) );
 
 
 	/*	Creo pipe	*/
@@ -177,13 +208,14 @@ int main (int argc, char **argv) {
 
 	/*	 Ubico los archivos a procesar		*/
 	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE); /*perror*/
-	if (paths == NULL )  
+	if (paths == NULL ) { 
 		perror("malloc");
+		exit(-1); 
+	}
 
 	n_files = myFind(argv[2], &paths); 
 	/*printf("numero de archivos encontrados: %d\n",n_files);*/
 	/*printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));*/
-
 
 
 	/*	Calculo el numero de procesos a usar 	*/
@@ -231,7 +263,7 @@ int main (int argc, char **argv) {
 	 *
 	 */
 
-	switch( fork() ) 
+	switch( merger_pid = fork() ) 
 	{
 		default: 
 			break; 
@@ -244,33 +276,44 @@ int main (int argc, char **argv) {
 
 		case 0: 
 
-			if( close(pipe_fd[WRITE]) == -1) 
+			if( close(pipe_fd[WRITE]) == -1) {
 				perror("close");
+				
+				exit(-3); 
+			}
 
-			if( dup2(pipe_fd[READ], 0) == -1) 
+			if( dup2(pipe_fd[READ], 0) == -1) {
 				perror("dup2");
 
-			if( close(pipe_fd[READ]) == -1) 
+				exit(-3); 
+			}
+
+			if( close(pipe_fd[READ]) == -1) {
 				perror("close");
+
+				exit(-3);
+			}
 
 
 
 			word_size = (int *) malloc( sizeof(int) );
-			if( word_size == NULL)  
+			if( word_size == NULL) { 
 				perror("malloc"); 
 
-			frequency = (int*) malloc(sizeof(int));
-			if( frequency == NULL )  
-				perror("malloc");
-
+				exit(-1); 
+			}
 			r_controller = (int *) malloc( sizeof(int) );
-			if( r_controller == NULL ) 
+			if( r_controller == NULL ) {
 				perror("malloc");
 
+				exit(-1);
+			}
 			freq_list = (list *) malloc( sizeof(list) );
-			if( freq_list == NULL ) 
+			if( freq_list == NULL ) {
 				perror("malloc");
 
+				exit(-1);
+			}
 
 
 			listInit(freq_list); 
@@ -303,24 +346,29 @@ int main (int argc, char **argv) {
 					dummie = (node *) malloc( sizeof(node) );
 					if( dummie == NULL ) {
 						perror("malloc");
+
+						exit(-1);
 					}
 					
 					/*leo el tamano de la palabra*/
 					read(0, word_size, sizeof(int) ); 
 
 					/*leo la la palabra*/
-					word = (char *) malloc(*word_size*sizeof(char) ); 
-					if( word == NULL ) 
+					word = (char *) malloc((*word_size) * sizeof(char)); 
+					if( word == NULL ) {
 						perror("malloc");
 
-					read(0, word, *word_size + 1 );
+						exit(-1);
+					}
+					read(0, word, *word_size + 1);
 
 					/*leo la frecuencia*/
-					read(0, frequency, sizeof(int) );
+					/*read(0, &frequency, sizeof(int) );*/
 
 
 
-					nodeInit(dummie, word, *frequency); 
+					/*nodeInit(dummie, word, frequency); */
+					nodeInit(dummie, word, 1); 
 
 					listInsert(freq_list, dummie);
 
@@ -348,14 +396,8 @@ int main (int argc, char **argv) {
 
 			close(0); 
 
-			free(word_size); 
-			free(frequency); 
-			free(r_controller); 
-
 			listSort(freq_list);
 			listPrint(freq_list); 
-
-			listDestroy(freq_list);
 
 			exit(0);
 	}
@@ -399,7 +441,7 @@ int main (int argc, char **argv) {
 
 	for(i_=0; i_< n_ps ; i_++) {
 
-		switch( fork() ) 
+		switch( pid[i_] = fork() ) 
 		{
 			default: 
 				continue;
@@ -450,7 +492,7 @@ int main (int argc, char **argv) {
 				countFrequencies(my_list, paths, quot, aux, i_); 
 				
 				/*	Escribo mi lista de frecuencias al pipe	*/
-				listPrintRC(my_list, mutex, smp_r, smp_w);
+				/*listPrintRC(my_list, mutex, smp_r, smp_w);*/
 
 
 
@@ -488,13 +530,15 @@ int main (int argc, char **argv) {
 
 
 	/*	Espero procesos		*/
-	for (i_=0 ; i_<n_ps + 1 ; i_++)   {
+	for (i_=0 ; i_<n_ps ; i_++)   {
 
-		if(  wait(&status)  == -1) 
+		if( (pid_dbg = wait(&status[i_]) ) == -1) 
 			perror("waitpid ");
 
 	}
 
+	if( wait(&status[0])  == -1)
+		perror("waitpid");
 
 
 	/*	Elimino Semaforos	*/
