@@ -81,3 +81,66 @@ int isFileAvailable(int n){
 		return -1;
 	}
 }
+
+
+void listMerge(list *list_a, list *list_b){
+    /*Definicion de variables*/
+    int size_list_a, size_list_b;
+    node *node_a, *node_b;
+    list *new_list;
+
+    /*Inicializacion de variables*/
+    size_list_a = list_a->size;
+    size_list_b = list_b->size;
+
+    /*Se ubica cada nodo al inicio de la lista*/
+    node_a = list_a->head;
+    node_b = list_b->head;
+
+	/*Si la lista_a esta vacia, se copia la lista_b en lista_a*/
+	if(size_list_a == 0){
+		list_a->head = list_b->head;
+		list_a->tail = list_b->tail;
+		list_a->size = list_b->size;
+		return;
+	}/*Si la lista_b esta vacia, no se realiza mezcla alguna*/
+	else if(size_list_b == 0){
+		return;
+	}
+	else{
+		while(size_list_a > 0 && size_list_b > 0){
+			node *contains = listSearch(list_a, node_b); 
+			if (contains != NULL) {
+				contains->frequency += node_b->frequency;
+				size_list_b--;
+				node_b = node_b->next;
+			}
+			else {
+				if (nodeCompare(node_a, node_b) >= 0){
+					size_list_a--;
+					node_a = node_a->next;
+				}
+				else{
+					if(list_a->head == node_a){
+						listInsertBetween(list_a, NULL, node_b);
+					}
+					else{
+						listInsertBetween(list_a, node_a, node_b);
+					}
+					size_list_b--;
+					node_b = node_b->next;
+				}
+			}
+		}
+		
+		/*Completa la copia del sobrante de la lista b*/
+		if (size_list_b > 0){
+			while(size_list_b > 0){
+				listInsertBetween(list_a, list_a->tail, node_b);
+				list_a->tail = node_b;
+				size_list_b--;
+				node_b = node_b->next;
+			}
+		}
+	}
+}
