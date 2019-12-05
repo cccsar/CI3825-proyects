@@ -1,3 +1,13 @@
+/*
+ * Archivo: Archivo fuente para la estructura de datos hasht
+ *
+ * Descripcion:	
+ *
+ * Autores:
+ * 	Carlos Alejandro Sivira Munoz		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ *
+ */
 #include <stdio.h> 
 #include <stdlib.h>
 #include <sys/types.h> 
@@ -12,18 +22,15 @@
 
 #define TRUE 1
 #define FALSE 0
-/*constant for debugging*/
-#define CONSTANT 20
-
 
 
 /*hashtInit
  * --------------
+ * Da un valor inicial a cada entra de la tabla de hash
  *
- *
+ *	h_: tabla de hash a inicializar
  */
 void hashtInit(hasht h_){
-	/*every cell has a list with an address*/
 	int i_; 
 
 	for(i_=0; i_<HASH_SIZE; i_++)  
@@ -33,8 +40,9 @@ void hashtInit(hasht h_){
 
 /*hashDestroy
  * --------------
+ * Libera la memoria de cada lista lista asociada a la tabla
  *
- *
+ * 	h_: tabla de hash a destruir
  */
 void hashtDestroy(hasht h_) {
 	int i_;
@@ -48,11 +56,12 @@ void hashtDestroy(hasht h_) {
 
 /*hashtInsert
  * --------------
+ * Inserta un elemento en la tabla
  *
- *
+ * 	h_: tabla de hash que recibe el elemento
+ *	number: elemento a insertar
  */
 int hashtInsert(hasht h_, int number){
-	/*implement hash function and mix it wih list insertion*/
 	int index; 
 	snode *dummie; 
 
@@ -61,21 +70,16 @@ int hashtInsert(hasht h_, int number){
 
 	if (h_[index] != NULL ) { 
 
-		/*printf("list h_[%d] :\tsize: %d | number: %d\n",index, h_[index]->size, number); */
 
 		if ( singlySearch(h_[index], number)  ){ 
-			/*la tabla no acepta elementos repetidos*/
 			return FALSE; 
 		}
 
 	}
 	else {
-		/*printf("new list h_[%d] :\tnumber: %d \n",index, number); */
-
 		h_[index] = (singly *) malloc( sizeof(singly) );
 
 		singlyInit( h_[index] );
-
 	}
 
 
@@ -86,42 +90,3 @@ int hashtInsert(hasht h_, int number){
 
 	return TRUE;
 }
-
-
-/*hashtPrint
- * --------------
- *
- *
- */
-void hashtPrint(hasht t_) {
-	int i_;
-	for(i_=0; i_<HASH_SIZE/2; i_++)   {
-		if (t_[i_] != NULL ) 
-		singlyPrint(t_[i_]); 
-	}
-}
-
-
-/*  hashtTesting 
- * --------------
- *
- *
- */
-int hashtTesting () { 
-
-	hasht table; 
-	int i_;
-	
-	hashtInit(table); 
-
-	for(i_=0; i_<CONSTANT ; i_++) {
-		hashtInsert(table, i_); 
-	}	
-
-	hashtPrint(table);
-
-	hashtDestroy(table);
-
-	return 0; 
-}
-

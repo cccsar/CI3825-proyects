@@ -21,7 +21,8 @@
  *	prev: apuntador al elemento anterior
  */
 typedef struct list_element{
-	/*se define el struct "list_element" para poder referenciarlo dentro de si mismo*/
+	/*se define el struct "list_element" para poder referenciarlo dentro de si 
+	mismo*/
 	char *word; 
 	int frequency; 
 	struct list_element *next; 
@@ -79,7 +80,8 @@ node* listSearch(list *l, node *e);
  *	l: apuntador a la lista en donde se insertara el elemento
  *	e: apuntador al elemento a insertar
  *
- *	retorna: Un entero que representa si el elemento fue insertado, o se aumento su
+ *	retorna: Un entero que representa si el elemento fue insertado, o se 
+ *	aumento su
  *	frecuencia
  */
 int listInsert(list *l, node *e);
