@@ -1,0 +1,1679 @@
+----------------------------------------------------------------------------
+/*  Autores:
+ * 	Carlos Alejandro Sivira Munoz		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ *
+ ----------------------------------------------------------------------------
+ * Archivo: hasht.h
+ *
+ * Archivo de cabecera para la estructura hasht
+ *
+ */
+#include "singly.h"
+
+#ifndef __HASHT__
+#define __HASHT__
+
+#define HASH_SIZE 419
+
+/* Tipo: hasht
+ * --------------
+ * Tabla de hash, se implimenta como un arreglo de listas singly de 
+ * tamano igual a un primo no muy grande
+ */
+typedef singly * hasht[HASH_SIZE]; 
+
+/* hashtInit
+ * --------------
+ * Da un valor inicial a cada entra de la tabla de hash
+ *
+ *	h_: tabla de hash a inicializar
+ */
+void hashtInit(hasht h_);
+
+/* hashtDestroy
+ * --------------
+ * Libera la memoria de cada lista lista asociada a la tabla
+ *
+ * 	h_: tabla de hash a destruir
+ *
+ */
+void hashtDestroy(hasht h_) ;
+
+/* hashtInsert
+ * --------------
+ * Inserta un elemento en la tabla
+ *
+ * 	h_: tabla de hash que recibe el elemento
+ *	number: elemento a insertar
+ */
+int hashtInsert(hasht h_, int number);
+
+#endif
+----------------------------------------------------------------------------
+/*
+ * Archivo: hasht.h
+ * 
+ * Archivo: Archivo fuente para la estructura de datos hasht
+ *
+ */
+#include <stdio.h> 
+#include <stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <sys/wait.h>
+#include <fcntl.h>  
+#include <dirent.h> 
+#include <string.h> 
+#include <unistd.h>
+#include <string.h>
+#include "hasht.h"
+
+#define TRUE 1
+#define FALSE 0
+
+/*hashtInit
+ * --------------
+ * Da un valor inicial a cada entra de la tabla de hash
+ *
+ *	h_: tabla de hash a inicializar
+ */
+void hashtInit(hasht h_){
+	int i_; 
+
+	for(i_=0; i_<HASH_SIZE; i_++)  
+		h_[i_] = (singly *) NULL; 		
+}
+
+/*hashDestroy
+ * --------------
+ * Libera la memoria de cada lista lista asociada a la tabla
+ *
+ * 	h_: tabla de hash a destruir
+ */
+void hashtDestroy(hasht h_) {
+	int i_;
+
+	for(i_=0; i_<HASH_SIZE ; i_++) {
+		if (h_[i_] != NULL) 
+			singlyDestroy(h_[i_]);	
+	}	
+}
+
+/*hashtInsert
+ * --------------
+ * Inserta un elemento en la tabla
+ *
+ * 	h_: tabla de hash que recibe el elemento
+ *	number: elemento a insertar
+ */
+int hashtInsert(hasht h_, int number){
+	int index; 
+	snode *dummie; 
+
+	index = number % HASH_SIZE; 	
+
+	if (h_[index] != NULL ) { 
+
+
+		if ( singlySearch(h_[index], number)  ){ 
+			return FALSE; 
+		}
+
+	}else {
+		h_[index] = (singly *) malloc( sizeof(singly) );
+
+		singlyInit( h_[index] );
+	}
+
+
+	dummie = (snode *) malloc( sizeof(snode) );
+	snodeInit(dummie, number);
+
+	singlyInsert( h_[index], dummie);  
+
+	return TRUE;
+}
+----------------------------------------------------------------------------
+/*
+ * Archivo: list.h
+ *
+ * Descripcion:	Implementacion de lista doblemente enlazada que contiene
+ * 				palabras con recuencias asociadas.
+ *
+ */
+#ifndef __LIST__ 
+#define __LIST__
+/*Tipo: node
+ *------------
+ *	Tipo para manejar a los elementos de una lista de frecuencia de palabras	
+ *
+ *	word: palabra asociada con el nodo
+ *	frequency: frecuencia de la palabra en la lista
+ *	next: apuntador al elemento siguiente 
+ *	prev: apuntador al elemento anterior
+ */
+typedef struct list_element{
+	/*se define el struct "list_element" para poder referenciarlo dentro de si 
+	mismo*/
+	char *word; 
+	int frequency; 
+	struct list_element *next; 
+	struct list_element *prev;
+} node; 
+/*Funcion: nodeInit
+ *------------
+ *	Inicializa un elemento de lista
+ *	
+ *	e: apuntador al elemento a inicializar
+ *	c: cadena de caracteres a insertar
+ */
+void nodeInit(node *e, char *c, int f);
+/*Funcion: nodeSwap
+ *------------
+ *	Cambia los valores de los atributos "word" y "frequency" entre dos nodos
+ *
+ * 	u,v: apuntadores a los nodos a intercambiar.
+ */
+void nodeSwap(node *u, node *v);
+/*Tipo: list
+ *------------
+ *	Tipo definido para manejar la estructura lista
+ *
+ *	head: cabecera de la lista
+ *	tail: cola de la lista
+ *	size: tamano de la lista
+ */
+typedef struct {
+	node *head, *tail; 
+	int size;
+} list;
+/*Funcion: listInit
+ *------------
+ *	Inicializa una lista
+ *
+ *	l: apuntador a la lista a inicializar
+ */
+void listInit(list *l);
+/*Funcion: listSearch
+ *------------
+ *	Busca un elemento en una lista dada
+ *
+ *	l: apuntador a la lista en donde se realizara la busqueda
+ *	e: apuntador al elemento a buscar
+ *
+ *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo	
+ *  contrario retorna NULL.
+ */
+node* listSearch(list *l, node *e);
+/*Funcion: listInsert
+ *------------
+ *	Inserta, o aumenta la frecuencia de un elemento en la lista
+ *
+ *	l: apuntador a la lista en donde se insertara el elemento
+ *	e: apuntador al elemento a insertar
+ *
+ *	retorna: Un entero que representa si el elemento fue insertado, o se 
+ *	aumento su
+ *	frecuencia
+ */
+int listInsert(list *l, node *e);
+/*Funcion: listSort
+ * ------------
+ *	Ordena los elementos de la lista por frecuencia 
+ *
+ *	l: apuntador a la lista a ordenar
+ */
+void listSort(list *l);
+/*  Funcion: listMerge
+ *  --------------
+ *	Convina de forma ordenada dos listas.
+ *
+ *	list_a: Lista de palabras con orden alfanumerico y por frecuencia.
+ *  list_b: Lista de todas las palabras con orden alfanumerico y por frecuencia.
+ * 
+ *  return: void.
+ */
+int listMerge(list *list_a, list *list_b);
+/*Funcion: listPrint
+ *------------
+ *	Imprime en consola el contenido de la lista
+ *
+ * 	l: lista a imprimir
+ */
+void listPrint(list *l);
+#endif
+----------------------------------------------------------------------------
+/*
+ * Archivo: list.c
+ *
+ * Descripcion:	Implementacion de lista doblemente enlazada que contiene
+ * 				palabras con recuencias asociadas.
+ *
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "list.h"
+/*Funcion: nodeInit
+ * ------------
+ *	Inicializa un elemento de lista, asignando los valores iniciales
+ *	de sus atributos. 
+ *
+ *	e: apuntador al elemento a inicializar
+ *	c: cadena de caracteres insertar
+ */
+void nodeInit(node *e, char* c, int f) {
+	e->next = NULL; 
+	e->prev = NULL;
+	e->frequency = f;
+	e->word = c;
+}
+/*Funcion: nodeSwap
+ * ------------
+ *	Cambia los valores de los atributos "word" y "frequency" entre 
+ *	dos nodos
+ *
+ *	u,v: apuntadores a los nodos a intercambiar
+ */
+void nodeSwap(node *u, node *v) {
+	char *temp_word; 
+	int temp_frequency ;
+
+	temp_word = u->word; 
+	u->word = v->word; 
+	v->word = temp_word;
+
+	temp_frequency = u->frequency; 
+	u->frequency = v->frequency; 
+	v->frequency = temp_frequency; 
+}
+/*Funcion: listInit
+ * ------------
+ *	Inicializa una lista.			
+ *
+ *	l: apuntador a la lista a inicializar
+ */
+void listInit(list *l){
+	l->head = l->tail = NULL; 
+	l->size = 0;
+}
+/*Funcion: listSearch
+ * ------------
+ *	Busca un elemento en una lista dada. Para esto, compara el atributo 
+ *	"word" del elemento dado, con el atributo "word" de cada nodo en la 
+ *	lista. 
+ *
+ *	l: apuntador a la lista en donde se realizara la busqueda
+ *	e: apuntador al elemento a buscar
+ *
+ *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo 
+ *	contrario retorna NULL
+ */
+node* listSearch(list *l, node *e) {
+	/*dummie actua como un iterador sobre los elementos de la lista*/
+	node *dummie = l->head;
+	while(dummie != NULL) {
+		if(strcmp(dummie->word, e->word) == 0){
+			return dummie;
+		}
+		dummie = dummie->next;
+	}
+	return NULL;
+}
+/*Funcion: listInsert
+ * ------------
+ *	Inserta un elemento en una lista. La funcion se asegura de ajustar cada 
+ *	atributo de los elementos a cambiar, asi como atributos de la lista 
+ *	(de ser necesario)
+ *
+ *	l: apuntador a la lista en donde se insertara el elemento
+ *	e: apuntador al elemento a insertar
+ *
+ *	retorna: Un entero que representa si el elemento fue insertado, o se
+ *	aumento su frecuencia
+ */
+int listInsert(list *l, node *e) {
+	if (l->size == 0) {
+		l->head = e; 
+		l->tail = e;
+		e->frequency++;
+	}else {
+		/*Incremente la frecuencia en funcion de si el elemento esta o no en la 
+		lista*/
+		node *contains = listSearch(l, e);
+		if (contains != NULL){
+			if(e->frequency == 0) e->frequency++;
+			contains->frequency += e->frequency;
+			return -1;
+		}else {
+			l->tail->next = e; 
+			e->prev = l->tail; 
+			l->tail = e;
+			if(e->frequency == 0) e->frequency++;
+		}
+	}
+	l->size++; 
+	return 1;
+}
+/*Funcion: listSort
+ * ------------
+ *	Ordena los elementos de la lista en forma decreciente por frecuencia, 
+ *	y luego, los elementos con la misma frecuencia se ordenan 
+ *	alfanumericamente. Todo esto  usando una modificacion del 
+ *	algoritmo "insertion Sort"
+ *
+ *	l: apuntador a la lista a ordenar
+ */
+void listSort(list *l) {
+	if (l->size > 1) {
+		/*Se define a i como nodo, para poder usar una copia de*/ 
+		/* sus atributo mientras que j se define como apuntador para*/ 
+		/* realizar modificaciones los atributos del nodo apuntado*/
+		node i = *(l->head)->next; 
+		node *j ;
+		/*En el caso en el que 2 elementos tengan la misma*/
+		/*frecuencia, se comparan sus atributos "word" para ver*/ 
+		/* ordenarlos alfanumericamente.*/ 
+		while (&i != NULL) { 
+			j = i.prev; 
+			while(j!=NULL && (i.frequency >= j->frequency) ) { 
+				if (i.frequency > j->frequency) 
+					nodeSwap(j->next,j);
+				else 
+					if ( strcmp(i.word,j->word) < 0 )
+						nodeSwap(j->next,j); 
+					else 
+						break; 
+		       		j=j->prev; 
+			}		
+
+			if (i.next == NULL)
+				break;
+			i=*(i.next); 	
+		}
+	}
+}
+/*  Funcion: listMerge
+ *  --------------
+ *	Combina de forma ordenada dos listas.
+ *
+ *	list_a: Lista de palabras con orden alfanumerico y por frecuencia.
+ *  list_b: Lista de todas las palabras con orden alfanumerico y por frecuencia.
+ * 
+ *  return: void.
+ */
+int listMerge(list *list_a, list *list_b){
+    node *node_b, *new_node;
+    node_b = list_b->head;
+	/*Si la lista_a esta vacia, se copia la lista_b en lista_a*/
+	if(list_a->size == 0){
+		list_a->head = list_b->head;
+		list_a->tail = list_b->tail;
+		list_a->size = list_b->size;
+		return;
+	/*Si la lista_b esta vacia, no se realiza mezcla alguna*/
+	}else if(list_b->size == 0){
+		return;
+	/*Se insertan los elementos de la lista b en la lista a*/
+	}else{
+		while(node_b != NULL){
+			new_node = malloc(sizeof(node));
+			if(!new_node) {
+				perror("MALLOC");
+				return;
+			}
+			nodeInit(new_node, node_b->word, node_b->frequency);
+			listInsert(list_a, new_node);
+			node_b = node_b->next;
+		}
+	}
+}
+/*Funcion: listPrint
+ * ------------
+ *	Imprime en consola el contenido de la lista
+ *
+ * 	l: lista a imprimir
+ */
+void listPrint(list *l_) {
+	if (l_->size > 0) {
+		node *dummie = l_->head;
+		while (dummie != NULL ) { 
+			fprintf(stderr,"%s %d\n",dummie->word,dummie->frequency);
+			if (l_->head == l_->tail) 
+				break ;
+			dummie = dummie->next;
+		}
+	}
+}
+----------------------------------------------------------------------------
+/*
+ * Archivo: myFind.h
+ *
+ * Descripcion:	Archivo de cabecera para las funciones asociadas al recorrido
+ * de directorio
+ *
+ */
+
+#include "hasht.h"
+
+#ifndef __MY_FIND__
+#define __MY_FIND__
+
+/* arrangeMod
+ * --------------
+ * Recibe dos enteros y calcula el modulo del maximo entre el minimo de ellos
+ *
+ * 	a: entero a considerar
+ * 	b: entero a considerar
+ *
+ */
+int arrangeMod(int a, int b); 
+
+/* extendWord
+ * --------------
+ *  Actualiza la memoria alojada para un arreglo de string
+ *
+ *  	paths: arreglo de strings
+ *  	next_ceil: referencia al tamano actual
+ *
+ */
+void extendWord(char*** paths, int next_ceil); 
+
+/* isTxt
+ * --------------
+ * Verifica que el sufijo de un string sea ".txt"
+ *
+ * 	name: string cuyo sufijo se verifica
+ *
+ */
+int isTxt(char *name) ; 
+
+/* traverseDir
+ * --------------
+ * Funcion que recorre directorios en busqueda de archivos que coincidan
+ * con un criterio de busqueda. 
+ *
+ * Acumula estos archivos en un char**
+ *
+ *
+ *  	dir: Apuntador a directorio que se recorre
+ *  	dirname: nombre del directorio que se recorre
+ *  	inodes: tabla de hash para inodos
+ *  	paths: direccion de memoria del arreglo de strings
+ *  	ind: Entero usado para indizar el proximo nombre de archivo a guardar
+ *
+ * Retorna el numero de archivos que cumplen los criterios mencionados
+ */
+void traverseDir(DIR *dir, char *dirname, hasht *inodes, char*** paths, int ind) ; 
+
+/* myFind
+ * --------------
+ * Busca archivos con el sufijo .txt en una jerarquia de directorios,
+ * verifica que ninguno sea un hard link de otro y recupera la lista
+ * de pathnames
+ 
+ *
+ * 	dirname: nombre de la raiz del arbol de directorios
+ * 	paths: direccion del arreglo de strings
+ *
+ * Retorna el numero de archivos que cumplen un criterio
+ */
+int myFind (char *dirname, char*** Paths) ; 
+
+#endif
+----------------------------------------------------------------------------
+/*
+ * Archivo: myFind.c
+ *
+ * Descripcion:	Archivo fuente para las funciones asociadas al recorrido 
+ * de directorios
+ *
+ */
+
+#include <stdio.h> 
+#include <stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <fcntl.h>  
+#include <dirent.h> 
+#include <string.h> 
+#include <unistd.h>
+#include <string.h>
+#include "hasht.h"
+
+#define TRUE 1
+#define FALSE 0
+
+#define MAX_PATHNAME 5000
+
+#define STANDARD_SIZE 419 
+#define REG_SIZE 419 
+
+#define MIN(a,b) ((a < b)? a: b)
+#define MAX(a,b) ((a > b)? a: b) 
+
+/* arrangeMod
+ * --------------
+ * Recibe dos enteros y calcula el modulo del maximo entre el minimo de ellos
+ *
+ * 	a: entero a considerar
+ * 	b: entero a considerar
+ */
+int arrangeMod(int a , int b) {
+	return MAX(a,b) % MIN(a,b); 
+}
+
+/* extendWords
+ * --------------
+ * Actualiza la memoria alojada para un arreglo de string si se acerca a
+ * un multiplo de su tamano alojado actual
+ *
+ *	paths: arreglo de strings
+ * 	next_ceil: multiplo de su tamano actual
+ *
+ */
+void extendWords(char*** paths, int next_ceil) { 
+	if( ( *paths = (char**) realloc(*paths, sizeof(char*) * 
+					(next_ceil + REG_SIZE) ) ) == NULL)
+		perror("realloc");
+}
+
+/* isTxt
+ * --------------
+ * Verifica que el sufijo de un string sea ".txt"
+ *
+ * 	name: string cuyo sufijo se verifica
+ */
+int isTxt(char *name) { 
+	int n = strlen(name); 
+
+	if ( n>4 && (name[n-1] == 't') && (name[n-3] == 't') && 
+			(name[n-2] == 'x') && (name[n-4] == '.') ) {
+		return TRUE; 
+	}
+
+	return FALSE; 
+}
+
+/* traverseDir
+ * --------------
+ * Esta funcion recorre de forma recursiva un arbol de directorios dado un 
+ * directorio raiz, y anade a un arreglo de strings aquellos nombres de
+ * archivo que tengan el sufijo ".txt".
+ *
+ * Para evitar repeticiones por hard links, emplea una tabla de hash
+ * en la que guarda los inodos de cada nuevo archivo encontrado, asi 
+ * si se encuentra otro hard link de un archivo ya revisado, este se evita.
+ *  	
+ * Se utiliza un char*** para poder actualizar el tamano del arreglo de 
+ * strings en caso de que se alcance su cota base, y la nueva direccion se 
+ * preserve luego de la llamada a la funcion.
+ *
+ *
+ *  	dir: Apuntador a directorio que se recorre
+ *  	dirname: nombre del directorio que se recorre
+ *  	inodes: tabla de hash para inodos
+ *  	paths: direccion de memoria del arreglo de strings
+ *  	ind: Entero usado para indizar el proximo nombre de archivo a guardar
+ *
+ * Retorna el numero de archivos que cumplen los criterios mencionados.
+ */
+int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) { 
+	int len, term, help; 
+	char path[MAX_PATHNAME], pathname[MAX_PATHNAME]; 
+	DIR *curr_dir;
+	struct dirent *current_ent; 
+	struct stat current_st; 
+
+
+	help = 0;
+	term = 0;
+	strcpy(path, dirname); 
+
+	while( (current_ent = readdir(dir)) != NULL ) { 
+
+		if( strcmp(current_ent->d_name,".")!=0 
+				&& strcmp(current_ent->d_name,"..")!=0) 
+		{
+			strcpy(pathname, path); 		
+			len = strlen( pathname ) ;
+
+			if (pathname[len-1] != '/')
+				strcat(pathname,"/"); 
+
+			/* Extiendo el pathname para que incluya el nombre de la 
+			 * entrada actual */
+			strcat(pathname, current_ent->d_name);	
+
+			if(lstat(pathname, &current_st) == -1)
+				perror("stat");
+
+
+			/*Se ignoraran links simbolicos*/
+			if ( S_ISREG(current_st.st_mode) &&
+				       	isTxt(current_ent->d_name) &&
+					hashtInsert(inodes,current_st.st_ino) ) 
+			{
+
+				if ((arrangeMod(STANDARD_SIZE, ind+term+1) == 0) 
+						&& (ind + term + 1 != 1))	
+				{
+					extendWords(paths, ind + term + 1); 
+				}
+
+				paths[0][ind+term] = (char*) malloc(sizeof(char)*
+					       	strlen(pathname) + 1); 
+
+				if (paths[0][ind+term] == NULL)
+					perror("malloc");
+
+				strcpy( paths[0][ind+term],pathname);
+				term++;
+			}
+			else if ( S_ISDIR(current_st.st_mode) && 
+					!S_ISLNK(current_st.st_mode) ) 
+			{
+			  	if( (curr_dir = opendir(pathname) ) == NULL)
+					perror("opendir ");
+
+
+			 	term += traverseDir(curr_dir, pathname, 
+						inodes, paths, ind + term ); 
+
+				closedir(curr_dir);
+			}
+
+		}
+	}
+
+	help += term;
+	return help;  
+}
+
+/* myFind
+ * --------------
+ * Busca archivos con el sufijo .txt en una jerarquia de directorios,
+ * verifica que ninguno sea un hard link de otro y recupera la lista
+ * de pathnames
+ *
+ * 	dirname: nombre de la raiz del arbol de directorios
+ * 	paths: direccion del arreglo de strings
+ *
+ * Retorna el numero de archivos que cumplen un criterio.
+ */
+int myFind (char *dirname, char ***paths) { 
+
+	int n_paths;
+	DIR *dir; 
+	struct stat d_stat; 	
+	hasht inodes; 
+
+	hashtInit(inodes); 
+
+	if ( stat(dirname, &d_stat) == -1 )
+		perror("stat"); 
+
+	if( !S_ISDIR(d_stat.st_mode) ) {
+		fprintf(stderr,"Not a directory\n");
+		exit(-1);
+	}
+	else { 
+		dir = opendir(dirname); 
+		n_paths = traverseDir(dir, dirname, inodes, paths, 0); 
+	}
+
+	hashtDestroy(inodes);
+	closedir(dir);
+
+	return n_paths;
+}
+----------------------------------------------------------------------------
+/*
+ * Archivo: singly.h 
+ *
+ * Descripcion:	Archivo de cabecera para la estructura singly.
+ *
+ */
+
+#ifndef __SINGLY__
+#define __SINGLY__
+
+/* snode
+ * --------------
+ * Inicializa nodo de lista singly
+ *
+ * 	n_: apuntador al nodo a inicializar
+ *	number: inodo que acompana al nodo
+ */
+typedef struct singly_node {
+	struct singly_node *next; 
+	int element; 
+} snode;
+
+/* singly 
+ * --------------
+ * Estructura singly
+ *
+ * 	lista simplemente enlazada	
+ */
+typedef struct {
+	snode *head, *tail; 
+	int size;
+} singly;
+
+/* snodeInit
+ * --------------
+ * Inicializa nodo de lista singly
+ *
+ * 	n_: apuntador al nodo a inicializar
+ *	number: inodo que acompana al nodo
+*/
+void snodeInit(snode *n_, int number); 
+
+/* singlyInit
+ * --------------
+ * Inicializa una lista singly
+ *
+ * 	l_: apuntador a una lista
+ */
+void singlyInit(singly *l_) ;
+
+/* singlyDestroy
+ * --------------
+ * Libera la memoria de una lista singly
+ *
+ * 	l_: lista a destruir
+ *
+ */
+void singlyDestroy(singly *l_) ;
+
+/* singlyInsert
+ * --------------
+ * Inserta un nodo en una lista singly
+ *
+ * 	l_: apuntador a la lista en donde se insertara
+ * 	n_: apuntador del nodo a insertar
+ *
+ */
+void singlyInsert(singly *l_, snode *n_) ;
+
+/* singlySearch
+ * --------------
+ * Revisa si un existe un nodo en la lista con un inodo asociado dado.
+ *
+ * 	l_: apuntador a la lista
+ * 	number: inodo a consultar
+ *
+ */
+int singlySearch(singly *l_, int number) ;
+
+#endif
+----------------------------------------------------------------------------
+/*
+ * Archivo: singly.c
+ *
+ * Descripcion:	Archivo fuente para las estructuras singly y snode
+ *
+ */
+#include <stdio.h> 
+#include <stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <sys/wait.h>
+#include <fcntl.h>  
+#include <dirent.h> 
+#include <string.h> 
+#include <unistd.h>
+#include <string.h>
+#include "singly.h"
+
+#define TRUE 1
+#define FALSE 0
+
+/* snodeInit
+ * --------------
+ * Inicializa nodo de lista singly
+ *
+ * 	n_: apuntador al nodo a inicializar
+ *	number: inodo que acompana al nodo
+ */
+void snodeInit(snode *n_, int number) {
+	n_->next = (snode *) NULL; 
+	n_->element = number; 
+}
+
+/* singlyInit
+ * --------------
+ * Inicializa una lista singly
+ *
+ * 	l_: apuntador a una lista
+ */
+void singlyInit(singly *l_) {
+	l_->head = l_->tail = (snode *) NULL; 
+	l_->size = 0; 
+}
+
+/* singlyDestroy
+ * --------------
+ * Libera la memoria de una lista singly
+ *
+ * 	l_: lista a destruir
+ */
+void singlyDestroy(singly *l_) {
+	snode *killed, *dummie; 
+
+	if (l_->size >= 1 ) {
+		killed = l_->head;
+		dummie = killed->next;
+		while( dummie != (snode*) NULL ) {
+			free(killed); 
+			killed = dummie; 
+			dummie = dummie->next; 
+		}
+		free(killed);
+	}		
+
+	free(l_);
+}
+
+/* singlyInsert
+ * --------------
+ * Inserta un nodo en una lista singly
+ *
+ * 	l_: apuntador a la lista en donde se insertara
+ * 	n_: apuntador del nodo a insertar
+ */
+void singlyInsert(singly *l_, snode *n_) {
+	
+	if (l_->size == 0)  {
+		l_->head = l_->tail = n_; 
+	}
+	else if (l_->size >= 1 )  {
+		(l_->tail)->next = n_; 
+		l_->tail = n_;
+	}
+
+	l_->size++;
+}
+
+/* singlySearch
+ * --------------
+ * Revisa si un existe un nodo en la lista con un inodo asociado dado.
+ *
+ * 	l_: apuntador a la lista
+ * 	number: inodo a consultar
+ */
+int singlySearch(singly *l_, int number) {
+	int i_; 
+	snode *dummie; 
+
+
+	dummie = l_->head; 
+	for(i_=0; i_<l_->size; i_++) {
+		
+		if ( dummie->element == number) 
+			return 1; 
+
+		dummie = dummie->next;
+	}
+
+	return 0; 
+}
+----------------------------------------------------------------------------
+/*
+ * Archivo: main.c (frecpalhilo)
+ *
+ * Descripcion:	Recibe un directorio, busca todos los archivos que terminan en
+ * 				.txt, lee su contendo y lo ordena el listas de frecuencia usando
+ * 				hilos.
+ *
+ */
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <errno.h>
+#include "list.h"
+
+#define WORD_SIZE 20
+#define MAX_THREADS 1000 
+#define STANDARD_SIZE 419 
+#define ARGV_DESP 0
+#define SEM_COUNT 1
+#define SEM_SHARED_WITH 0
+/*-----------------------------------ESTRUCTURAS------------------------------*/
+/*	Tipo: thread_vars_t
+ *	-------------------
+ *		Tipo para manejar los datos compartidos entre hilos.	
+ *
+ *	files: Archivos quen contienen palabras a leer.
+ *	main_list: Lista donde son mezclados las palabras.
+ *	num_files: Numero total de archivos a leer.
+ */
+typedef struct thread_vars_struct{
+    char **files;
+	list *main_list;
+	int num_files;
+}thread_vars_t;
+/*-----------------------------------ESTRUCTURAS------------------------------*/
+/*-------------------------------VARIABLES GLOBALES---------------------------*/
+int global_index;/*Contador de archivos leidos*/
+sem_t sem_merge;/*Semaforo que controla el acceso a global_index*/
+sem_t sem_index;/*Semaforo que controla el acceso a main_list*/
+/*-------------------------------VARIABLES GLOBALES---------------------------*/
+/* 	freecpalList
+ * 	------------------
+ *  	Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
+ *  	lee cada palabra del archivo y la inserta en una "lista de frecuencias".
+ *
+ *  	Recibe los archivos segun la disponibilidad del indice global.
+ * 		
+ *	arg: Structura que contiene la informacion que comparten los hilos 
+ *
+ */
+void *freecpalList(void *arg){
+	/*----------------------------------VARIABLES-----------------------------*/
+    thread_vars_t *vars;
+    FILE *fp;
+	int index;
+	char *current_word;
+	node *space;
+	list *my_list;
+	/*----------------------------------VARIABLES-----------------------------*/
+	/*Se salvan los datos compartidos como tipo thread_vars_t*/
+    vars = (thread_vars_t*)arg;
+	/*Se reserva el espacio de la lista del hilo*/
+	my_list = (list*)malloc(sizeof(list));
+	if (!my_list) {
+		perror("MALLOC");
+		pthread_exit((void*)-1);
+	}
+	/*Los hilos procesan archivos hasta agotar la existencia*/
+	do
+	{
+		listInit(my_list);
+		/*-----------------------------REGION CRITICA ------------------------*/
+		sem_wait(&sem_index);
+			index = (isFileAvailable(vars->num_files) == 1) ? global_index : -1;
+		sem_post(&sem_index);
+		/*-----------------------------REGION CRITICA ------------------------*/
+		if(index == -1){/*No hay mas archivos para leer*/
+			free(my_list);
+			pthread_exit((void*)0);
+		}
+
+		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r"))){ 
+			fprintf(stderr, "%s",vars->files[index + ARGV_DESP]);
+			perror("FOPEN");
+			pthread_exit((void*)-3);
+		}
+		
+		current_word = (char*)malloc(WORD_SIZE*sizeof(char));
+		if (!current_word) {
+			perror("MALLOC");
+			pthread_exit((void*)-1);
+		}
+		/*Lectura de palabras*/
+		while(fscanf(fp,"%s",current_word) != EOF) { 
+			space = (node*)malloc(sizeof(node)); 
+			if(!space) {
+				perror("MALLOC");
+				pthread_exit((void*)-1);
+			}
+
+			nodeInit(space, current_word, 0);
+			if (listInsert(my_list, space) < 0) {
+				free(space);
+				free(current_word);
+			}
+			
+			current_word = (char*)malloc(WORD_SIZE*sizeof(char)); 			
+			if(!current_word) {
+				perror("MALLOC");
+				pthread_exit((void*)-1);
+			}
+		}
+		fclose(fp);
+		/*-----------------------------REGION CRITICA ------------------------*/
+		sem_wait(&sem_merge);
+			listMerge(vars->main_list, my_list);
+		sem_post(&sem_merge);
+		/*-----------------------------REGION CRITICA ------------------------*/
+		free(current_word);
+	} while (index >= 0);
+}
+/* 	isFileAvailable
+ * 	---------------
+ *  	Verifica si hay archivos disponibles que un hilo pueda procesar.
+ * 		
+ *	n: Numero total de archivos a leer. 
+ *	
+ *  return: 1 si hay archivos disponibles. -1 en caso contrario.
+ */
+int isFileAvailable(int n){
+	if(global_index < n - 1){
+		global_index++;
+		return 1;
+	}else{
+		return -1;
+	}
+}
+/* 	main
+ * 	--------------
+ *		Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello,
+ *		mediante el uso de hilos, lee cada palabra de un archivo y las inserta
+ *		en una "lista de frecuencias".
+ *
+ * 		Muestra la frecuencia de las palabras en una lista principal que es el 
+ * 		resultado de convinar las listas generadas por los hilos. Muestra esta
+ * 		lista en la salida estandar.
+ *
+ * 	argc: Numero de argumentos.
+ * 	argv: <Numero de hilos> <Numero de archivos> {archivos con palabras}
+ */
+int main(int argc, char *argv[]){
+	/*----------------------------------VARIABLES-----------------------------*/
+	thread_vars_t *thread_vars;
+	list *main_list;
+    pthread_t *t_ids;
+	char **paths;
+    int i, n_thread, n_files, trash;
+	/*----------------------------------VARIABLES-----------------------------*/
+	/*Se reserva el espacio a utilizar*/
+	thread_vars = (thread_vars_t*)malloc(sizeof(thread_vars));
+	main_list = (list*)malloc(sizeof(list));
+	/*Se salvan los datos suministrados*/
+	n_thread = atoi(argv[1]);
+	/*Arreglo de identificadores de hilos*/
+	t_ids = malloc(sizeof(pthread_t*)*n_thread);
+	if (t_ids == NULL ) { 
+		perror("MALLOC");
+		exit(-1); 
+	}
+	global_index = -1; /*Se inicializa el contador*/
+	/*Archivos a procesar*/
+	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE);
+	if (paths == NULL) { 
+		perror("MALLOC");
+		exit(-1); 
+	}
+	/*Cantidad de archivos a procesar*/
+	n_files = myFind(argv[2], &paths); 
+	printf("numero de archivos encontrados: %d\n",n_files);
+	printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));
+
+	/*Inicializacion de lista principal y semaforos*/
+	listInit(main_list);
+	sem_init(&sem_index, SEM_SHARED_WITH, SEM_COUNT);
+	sem_init(&sem_merge, SEM_SHARED_WITH, SEM_COUNT);
+	/*Inicializacion de datos compartidos entre hilos*/
+	thread_vars->files = paths;
+	thread_vars->main_list = main_list;
+	thread_vars->num_files = n_files;
+	/*Si el numero de hilos es superior al de archivos, se toma el numero de 
+	archivos como el numero de hilos a utilizar*/
+	n_thread = (n_thread >= n_files ? n_files : n_thread);
+
+    /*Creacion de los hilos con la funcion freecpalList*/
+    for (i = 0; i < n_thread; i++){
+        if (pthread_create(&t_ids[i], NULL, *freecpalList, thread_vars) != 0){
+            perror("PTHREAD");
+			exit(-2);
+        }
+    }
+	
+    /*Se realiza la espera de los hilos*/
+    for (i = 0; i < n_thread; i++) {
+        if (pthread_join(t_ids[i], NULL) != 0){
+            perror("PTHREAD");
+			exit(-2);
+        }
+    }
+	
+	/*Muestra del contenido de la lista*/
+	listSort(main_list);
+	listPrint(main_list);
+	/*Se libera la memoria*/
+    sem_destroy(&sem_index);
+	sem_destroy(&sem_merge);
+	free(main_list);
+	free(thread_vars);
+	free(paths);
+	free(t_ids);
+	/*El hilo principal termina*/
+    pthread_exit(NULL);
+}
+----------------------------------------------------------------------------
+/*
+ * Archivo: main.c (frecpalproc)
+ *
+ * Descripcion:	Archivo fuente para la rutina principal de la aplicacion
+ * frecpalproc
+ *
+ */
+#include <stdio.h> 
+#include <stdlib.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <sys/wait.h>
+#include <fcntl.h>  
+#include <dirent.h> 
+#include <string.h> 
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
+#include <semaphore.h>
+#include <errno.h>
+#include "myFind.h"
+#include "list.h"
+
+#define WRITE 1
+#define READ 0
+
+#define WORD_SIZE 20
+
+#define STANDARD_SIZE 419 
+
+#define SMP0 "/mutex"
+#define SMP1 "/sem_reader"
+#define SMP2 "/sem_writer"
+#define MODE S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH
+
+#define MIN(a,b) (a < b)? a: b;
+
+
+/* countFrequencies
+ * --------------
+ * Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
+ * lee cada palabra del archivo y la inserta en una "lista de frecuencias"
+ *
+ * Recibe los archivos de un arreglo de strings, seleccionando solo un 
+ * segmento de este.
+ *
+ * 		
+ *	my_list:  lista de frecuencias
+ *	paths: arreglo con los nombres de los archivos a leer
+ *	floor: cota inferior del arreglo de archivos a leer
+ *	ceil: cota superior del arreglo de archivos a leer
+ *	reference: se utiliza para desplazarse sobre el arreglo de string 
+ *
+ */
+void countFrequencies(list *my_list, char** paths, int floor, int ceil,
+	       	int reference){
+	int j_; 
+	FILE *fp; 
+
+	char* current_word; 
+	char* word_buffer; 
+	node *space;
+
+
+	word_buffer = (char *) malloc( sizeof(char) * WORD_SIZE + 1);
+
+	for(j_=floor*reference; j_ < floor*reference + ceil  ; j_++) { 
+	
+		if ( !(fp = fopen(paths[j_],"r")) ){
+			perror("fopen"); 
+		
+			exit(-3); 
+		}
+
+		while( fscanf(fp,"%s", word_buffer) != EOF) { 
+
+			if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL) 
+				perror("malloc");
+		
+			current_word = (char *) malloc( sizeof(char) * 
+					strlen(word_buffer) + 1 );
+			if(current_word == NULL) 	
+				perror("current_word ");
+
+			strcpy(current_word, word_buffer); 
+			nodeInit(space, current_word, 1); 
+		
+			/* En caso de que solo la frecuencia de un elemento 
+			 * se aumente como ese nodo ya esta creado, se libera
+			 * la memoria que se almaceno para insertarlo. 
+			 */
+
+			if (listInsert(my_list, space) < 0) {
+				free(current_word);
+				free(space);
+			}
+		
+		
+		}
+
+		if( fclose(fp) == -1)
+			perror("fclose");
+		
+		free( paths[j_] );
+	} 
+	free(word_buffer);
+}
+
+
+
+/* main
+ * --------------
+ * Metodo principal de la aplicacion frecpalhilo
+ *
+ * El enfoque que se dio para hacer posible esta aplicacion fue:
+ * 	
+ * 	Primero se realiza la busqueda de los archivos a revisar desde el proceso
+ * 	padre, al comienzo del mismo.
+ *
+ * 	Despues de esto se calcula la reparticion de archivo a los procesos 
+ * 	contadores y se hacen los fork del proceso merger y los procesos contadores.
+ *
+ * 	Counters: Procesos escritores, abren cada archivo recibido, insertan las 
+ * 	palabras encontradas en una lista de frecuencias y escriben la informacion de 
+ * 	las mismas en un pipe no nominal, para que el merger las lea. 
+ *
+ * 	Merger: Proceso lector, recibira entrada formateada de un pipe no nominal y 
+ * 	la mezclara en una lista de frecuencias final, que sera presentada de forma
+ * 	ordenada por stdout.
+ *
+ * 	Por ultimo, en cada proceso se cierran file descriptors del pipe, se liberan
+ * 	buffers, se hace unlink a semaforos y se cierran.
+ */
+int main (int argc, char **argv) { 
+	int n_files, n_ps, quot, rem, aux, i_; 
+	char **paths ;
+
+	/*	Procesos 	*/
+	int status; 
+	
+	/*	Pipe	*/
+	int pipe_fd[2]; 
+
+	/*	Semaforo	*/
+	sem_t *mutex, *smp_r, *smp_w; 
+	int  *r_controller; 
+	int trash;
+
+	/*	Proceso mezclador	 */
+	char* word; 
+	int terminated;
+	int* word_size, *frequency; 
+	list *freq_list; 
+	node *dummie; 
+
+	/*	Procesos contadores 	*/
+	list *my_list;
+
+
+
+	/*	Creo pipe	*/
+	if( pipe(pipe_fd)  == -1) {
+		fprintf(stderr, "Error abriendo pipe");
+		perror("pipe");
+
+		exit(-3);
+	}
+
+	/* 	Elimino a los semaforos en caso de que existan antes 	*/
+	trash = sem_unlink(SMP0);
+	if( trash != 0 && errno != ENOENT)
+		perror("sem_unlink");	
+
+	trash = sem_unlink(SMP1);
+	if( trash != 0 && errno != ENOENT)
+		perror("sem_unlink");	
+
+	trash = sem_unlink(SMP2);
+	if( trash != 0 && errno != ENOENT)
+		perror("sem_unlink");	
+
+
+	/*	 Ubico los archivos a procesar		*/
+	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE); /*perror*/
+	if (paths == NULL )  
+		perror("malloc");
+
+	n_files = myFind(argv[2], &paths); 
+
+
+	/*	Calculo el numero de procesos a usar 	*/
+	n_ps = MIN(atoi(argv[1]), n_files);
+
+
+	/*	Creo a los semaforos	*/
+	if((mutex=sem_open(SMP0, O_CREAT | O_RDWR, MODE, 1)) == SEM_FAILED){
+		perror("sem_open");
+
+		exit(-2); 
+	}
+
+	if((smp_r=sem_open(SMP1, O_CREAT | O_RDWR, MODE, n_ps)) == SEM_FAILED){
+		perror("sem_open");
+
+		exit(-2); 
+	}
+
+	if((smp_w=sem_open(SMP2, O_CREAT | O_RDWR, MODE, 0))  == SEM_FAILED){
+		perror("sem_open");
+
+		exit(-2); 
+	}
+
+	/* 		Proceso merger
+	 *
+	 * 	Para empezar cierra los extremos del pipe que no se usaran
+	 *
+	 * 	Luego espera por la escritura al pipe en un semaforo
+	 *
+	 * 	Del pipe primero lee una variable "r_controller", que indica si 
+	 * 	un proceso contador ha escrito o si ya termino de escribir. 
+	 * 	En el primer caso, continua leyendo en el formato de escritura
+	 * 	de los procesos contadores.
+	 * 	
+	 * 	Este proceso espera hasta que los contadores hayan dejado de 
+	 * 	escribir al pipe, y luego imprime una lista de frecuencias 
+	 * 	ordenada por salida estandar
+	 */
+
+	switch( fork() ) 
+	{
+		default: 
+			break; 
+
+		case -1: 
+			perror("fork");
+			fprintf(stderr, "No se pudo abrir el merger\n");
+
+			exit(-4);
+
+		case 0: 
+
+			if( close(pipe_fd[WRITE]) == -1) 
+				perror("close");
+
+			if( dup2(pipe_fd[READ], 0) == -1) 
+				perror("dup2");
+
+			if( close(pipe_fd[READ]) == -1) 
+				perror("close");
+
+			word_size = (int *) malloc( sizeof(int) );
+			if( word_size == NULL)  
+				perror("malloc"); 
+
+			frequency = (int*) malloc(sizeof(int));
+			if( frequency == NULL )  
+				perror("malloc");
+
+			r_controller = (int *) malloc( sizeof(int) );
+			if( r_controller == NULL ) 
+				perror("malloc");
+
+			freq_list = (list *) malloc( sizeof(list) );
+			if( freq_list == NULL ) 
+				perror("malloc");
+
+
+			listInit(freq_list); 
+			terminated = 0; 
+
+			while (terminated != n_ps) {
+
+				if( sem_wait(smp_w) == -1) {
+					perror("sem_wait");
+					exit(-2);
+				}
+
+				if( sem_wait(mutex)  == -1) {
+					perror("sem_wait");
+					exit(-2);
+				}
+
+
+				read(0, r_controller, sizeof(int) ) ; 
+
+ 
+				if( *r_controller != -1) { 
+					/*Inicializo nodo*/
+					dummie = (node *) malloc( sizeof(node) );
+					if( dummie == NULL ) {
+						perror("malloc");
+					}
+
+					/*leo el tamano de la palabra*/
+					read(0, word_size, sizeof(int) ); 
+
+					/*leo la la palabra*/
+					word = (char *) malloc(*word_size * 
+							sizeof(char) ); 
+					if( word == NULL ) 
+						perror("malloc");
+
+					read(0, word, *word_size + 1 );
+
+					/*leo la frecuencia*/
+					read(0, frequency, sizeof(int) );
+
+					nodeInit(dummie, word, *frequency); 
+					listInsert(freq_list, dummie);
+				}
+				else  
+					terminated++; 
+
+
+				if( sem_post(mutex)  == -1) {
+					perror("sem_post");
+					exit(-2);
+				}
+
+				if( sem_post(smp_r)  == -1) {
+					perror("sem_post");
+					exit(-2);
+				}
+				
+			}
+
+			close(0); 
+
+			free(word_size); 
+			free(frequency); 
+			free(r_controller); 
+
+			listSort(freq_list);
+			listPrint(freq_list); 
+
+			exit(0);
+	}
+
+	/*		 Se calcula la reparticion de archivos		
+	 *
+	 *	Si se piden mas procesos que archivos encontrados, entonces se utilizaran
+	 *	tantos procesos como archivos.
+	 *
+	 *	De lo contrario	se reparte una cantidad de "quot" archivos por proceso, 
+	 *	salvo en el ultimo proceso, que recibe "quot + rem" archivos.
+	 *
+	 */
+	
+	if ( n_ps >= n_files ) {
+		quot = 1; 
+		rem = 0;
+	}
+	else {
+		quot = n_files / atoi(argv[1]) ;
+		rem = n_files % atoi(argv[1]) ;
+	}
+
+	/*		Procesos contadores
+	 *
+	 *	Luego calculan la frecuencia de las palabras en los archivos 
+	 *	recibidos. Esto se almacena en una lista de frecuencias
+	 *
+	 *	Despues de esto pasan a escribir el contenido de la lista en un 
+	 *	pipe, un nodo a la vez (con un formato en particular). Esto es 
+	 *	mediado por semaforo, de forma que mientras un proceso escribe, ninguno 
+	 *	otro lee o escribe. 
+	 *
+	 *	por ultime liberan buffers y cierran file descriptors
+	 */
+
+	for(i_=0; i_< n_ps ; i_++) {
+
+		switch( fork() ) 
+		{
+			default: 
+				continue;
+
+			case -1: 
+				perror("fork"); 
+
+				exit(-4); 
+
+			case 0: 
+
+				if ( i_ != n_ps - 1) 
+					aux = quot; 
+				else 
+					aux = quot + rem; 
+
+
+				/*Cierro extremos del pipe no usados*/
+				if( close(pipe_fd[READ])  == -1) {
+					perror("close");
+
+					exit(-3); 
+				}
+
+				if( dup2(pipe_fd[WRITE],1)  == -1) {
+					perror("dup2");
+
+					exit(-3); 
+				}
+
+				if( close(pipe_fd[WRITE]) == -1) {
+					perror("close");
+
+					exit(-3); 
+				}
+
+
+				my_list = (list*) malloc( sizeof(list) ); 
+				if (my_list == NULL ) {
+					perror("malloc"); 
+
+					exit(-1); 
+				}
+				listInit(my_list);
+			
+
+				/*	Inserto nodos y cuento frecuencias	*/
+				countFrequencies(my_list, paths, quot, aux, i_); 
+				
+				/*	Escribo mi lista de frecuencias al pipe	*/
+				listPrintRC(my_list, mutex, smp_r, smp_w);
+
+
+
+				if( sem_close(mutex) == -1) 
+					perror("sem_close");
+				
+				if( sem_close(smp_r) == -1)
+					perror("sem_close");
+				
+				if (sem_close(smp_w) == -1) 
+					perror("sem_close"); 
+
+
+				close(1); 
+				free(my_list); 
+
+				exit(0);
+
+
+		}
+	}
+
+	/*	Cierro pipes	*/
+	if( close(pipe_fd[0]) == -1)
+		perror("close");
+
+	if( close(pipe_fd[1]) == -1)
+		perror("close");
+
+	/*	Espero procesos		*/
+	for (i_=0 ; i_<n_ps + 1 ; i_++)   {
+		if(  wait(&status)  == -1) 
+			perror("waitpid ");
+	}
+
+	/*	Elimino Semaforos	*/
+	if( sem_unlink(SMP0) == -1)
+		perror("sem_unlink");
+
+	if( sem_unlink(SMP1) == -1)
+		perror("sem_unlink");
+
+	if( sem_unlink(SMP2) == -1)
+		perror("sem_unlink");
+	
+	/*	Cierro los semaforos 	*/
+	if( sem_close(mutex) == -1)
+		perror("sem_close");
+
+	if( sem_close(smp_r) == -1)
+		perror("sem_close");
+
+	if( sem_close(smp_w) == -1)
+		perror("sem_close");
+
+	exit(0);
+}
+----------------------------------------------------------------------------
+Archivo: Makefile (frecpalhilo)
+OPTS=-ansi -g -Wpedantic -pthread
+
+frecpalhilo: main.o  myFind.o hasht.o singly.o list.o
+	gcc ${OPTS} -o frecpalhilo main.o myFind.o hasht.o singly.o list.o -pthread
+
+main.o: main.c myFind.h list.h
+	gcc ${OPTS} -c main.c -pthread 
+
+myFind.o: myFind.c myFind.h hasht.h
+	gcc ${OPTS} -c myFind.c -pthread
+
+hasht.o: hasht.c hasht.h singly.h
+	gcc ${OPTS} -c hasht.c
+
+singly.o: singly.c singly.h
+	gcc ${OPTS} -c singly.c
+
+list.o: list.c list.h
+	gcc ${OPTS} -c list.c
+
+clean:
+	rm -rfv *.o freecpalhilo freecpal
+----------------------------------------------------------------------------
+Archivo: Makefile (frecpalproc)
+OPTS=-ansi -Wpedantic
+
+frecpalproc: main.o  myFind.o hasht.o singly.o list.o
+	gcc ${OPTS} -o frecpalproc main.o myFind.o hasht.o singly.o list.o -pthread
+
+main.o: main.c myFind.h list.h
+	gcc ${OPTS} -c main.c -pthread 
+
+myFind.o: myFind.c myFind.h hasht.h
+	gcc ${OPTS} -c myFind.c -pthread
+
+hasht.o: hasht.c hasht.h singly.h
+	gcc ${OPTS} -c hasht.c
+
+singly.o: singly.c singly.h
+	gcc ${OPTS} -c singly.c
+
+list.o: list.c list.h
+	gcc ${OPTS} -c list.c
+
+clean:
+	rm -rfv *.o frecpalproc

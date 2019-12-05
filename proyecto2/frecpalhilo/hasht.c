@@ -8,7 +8,7 @@
  * 	Cesar Alfonso Rosario Escobar		15-11295
  *
  */
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h> 
 #include <sys/stat.h> 

@@ -1,4 +1,3 @@
-
 OPTS=-ansi -Wpedantic
 
 frecpalproc: main.o  myFind.o hasht.o singly.o list.o

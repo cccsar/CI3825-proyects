@@ -1,4 +1,6 @@
 /*
+ * Archivo: hasht.h
+ * 
  * Archivo: Archivo fuente para la estructura de datos hasht
  *
  * Descripcion:	

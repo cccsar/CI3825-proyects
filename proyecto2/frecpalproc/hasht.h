@@ -1,5 +1,5 @@
 /*
- * Archivo: singly.h
+ * Archivo: hasht.h
  *
  * Descripcion:	Archivo de cabecera para la estructura hasht
  *
