@@ -13,7 +13,7 @@
 
 /*Tipo: node
  *------------
- *	Tipo para manejar a los elementos de una lista de frecuencia de palabras	
+ * Tipo para manejar a los elementos de una lista de frecuencia de palabras	
  *
  *	word: palabra asociada con el nodo
  *	frequency: frecuencia de la palabra en la lista
@@ -29,28 +29,29 @@ typedef struct list_element{
 } node; 
 
 
-/*Funcion: nodeInit
+/*nodeInit
  *------------
- *	Inicializa un elemento de lista
+ * Inicializa un elemento de lista
  *	
  *	e: apuntador al elemento a inicializar
  *	c: cadena de caracteres a insertar
+ *	f: frecuencia inicial dada
  */
 void nodeInit(node *e, char *c, int f);
 
 
-/*Funcion: nodeSwap
+/*nodeSwap
  *------------
- *	Cambia los valores de los atributos "word" y "frequency" entre dos nodos
+ * Cambia los valores de los atributos "word" y "frequency" entre dos nodos
  *
  * 	u,v: apuntadores a los nodos a intercambiar.
  */
 void nodeSwap(node *u, node *v);
 
 
-/*Tipo: list
+/*list
  *------------
- *	Tipo definido para manejar la estructura lista
+ * Tipo definido para manejar la estructura lista
  *
  *	head: cabecera de la lista
  *	tail: cola de la lista
@@ -62,62 +63,81 @@ typedef struct {
 } list;
 
 
-/*Funcion: listInit
+/* listInit
  *------------
- *	Inicializa una lista
+ * Inicializa una lista
  *
  *	l: apuntador a la lista a inicializar
  */
 void listInit(list *l);
 
 
-/*Funcion: listSearch
+/*listSearch
  *------------
- *	Busca un elemento en una lista dada
+ * Busca un elemento en una lista dada
  *
  *	l: apuntador a la lista en donde se realizara la busqueda
  *	e: apuntador al elemento a buscar
  *
- *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo contrario
- *	retorna NULL
+ * retorna: Si encuentra el elemento devuelve un apuntador a el, de lo contrario
+ * retorna NULL
  */
 node* listSearch(list *l, node *e);
 
 
-/*Funcion: listInsert
+/*listInsert
  *------------
- *	Inserta, o aumenta la frecuencia de un elemento en la lista
+ * Inserta, o aumenta la frecuencia de un elemento en la lista
  *
  *	l: apuntador a la lista en donde se insertara el elemento
  *	e: apuntador al elemento a insertar
  *
- *	retorna: Un entero que representa si el elemento fue insertado, o se aumento su
- *	frecuencia
+ * retorna: Un entero que representa si el elemento fue insertado, o se aumento su
+ * frecuencia
  */
 int listInsert(list *l, node *e);
 
 
-/*Funcion: listSort
+/*listSort
  * ------------
- *	Ordena los elementos de la lista por frecuencia 
+ * Ordena los elementos de la lista por frecuencia 
  *
  *	l: apuntador a la lista a ordenar
  */
 void listSort(list *l);
 
 
+/*listPrint
+ *------------
+ *Imprime en consola el contenido de la lista
+ *
+ * 	l: lista a imprimir
+ */
 void listPrint(list *l_); 
 
 
-/*Funcion: listPrint
- *------------
- *	Imprime en consola el contenido de la lista
+
+/* listPrintRC
+ * --------------
+ * Imprime el contenido de una lista a un pipe asociado al stdin. Utiliza 
+ * semaforos para evitar condicion de carrera durante la escritura
  *
- * 	l: lista a imprimir
+ * 	l_: lista que se imprime
+ * 	mutex: semaforo de exclusion mutua
+ * 	reader: semaforo de acceso a escritores
+ * 	writer: semaforo de acceso a lectores
+ *
  */
 void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer);
 
 
 
+/* listDestroy
+ * --------------
+ * Libera la memoria ocupada por una lista.
+ *
+ * 	l_: lista a liberar
+ */
 void listDestroy(list *l_);
+
 #endif
