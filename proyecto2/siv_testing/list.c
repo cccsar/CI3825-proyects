@@ -1,17 +1,18 @@
 /*
- * Archivo: list.c
+ * Archivo: list.c/.list.h
  *
- * Descripcion: Archivo fuente para las estructuras de datos list y node
+ * Descripcion:	Implementacion de lista doblemente enlazada que contiene
+ * 				palabras con recuencias asociadas.
  *
- * Autor: Cesar Alfonso Rosario Escobar
+ * Autores:
+ * 	Carlos Alejandro Sivira Munoz		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ *
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
-
-
 /*Funcion: nodeInit
  * ------------
  *	Inicializa un elemento de lista, asignando los valores iniciales
@@ -96,6 +97,8 @@ int listInsert(list *l, node *e) {
 		l->tail = e;
 		e->frequency++;
 	}else {
+		/*Incremente la frecuencia en funcion de si el elemento esta o no en la 
+		lista*/
 		node *contains = listSearch(l, e);
 		if (contains != NULL){
 			if(e->frequency == 0) e->frequency++;
@@ -140,13 +143,11 @@ void listSort(list *l) {
 						nodeSwap(j->next,j); 
 					else 
 						break; 
-			
 		       		j=j->prev; 
 			}		
 
 			if (i.next == NULL)
 				break;
-
 			i=*(i.next); 	
 		}
 	}
@@ -160,7 +161,7 @@ void listSort(list *l) {
  * 
  *  return: void.
  */
-void listMerge(list *list_a, list *list_b){
+int listMerge(list *list_a, list *list_b){
     node *node_b, *new_node;
     node_b = list_b->head;
 	/*Si la lista_a esta vacia, se copia la lista_b en lista_a*/
@@ -176,6 +177,10 @@ void listMerge(list *list_a, list *list_b){
 	}else{
 		while(node_b != NULL){
 			new_node = malloc(sizeof(node));
+			if(!new_node) {
+				perror("MALLOC");
+				return;
+			}
 			nodeInit(new_node, node_b->word, node_b->frequency);
 			listInsert(list_a, new_node);
 			node_b = node_b->next;
@@ -191,7 +196,6 @@ void listMerge(list *list_a, list *list_b){
 void listPrint(list *l_) {
 	if (l_->size > 0) {
 		node *dummie = l_->head;
-		
 		while (dummie != NULL ) { 
 			fprintf(stderr,"%s %d\n",dummie->word,dummie->frequency);
 			if (l_->head == l_->tail) 
@@ -199,32 +203,4 @@ void listPrint(list *l_) {
 			dummie = dummie->next;
 		}
 	}
-}
-/*###*/
-void pipeList(list *l) { 
-	node *dummie; 	
-
-	dummie = l->head; 
-	while(dummie != NULL) { 
-		write(1, *dummie, sizeof(node)); 
-		dummie = dummie->next; 
-	}
-
-}
-
-void listDestroy(list *l_) { 
-	node *dummie; 
-	node *killed; 
-
-	if (l_->size >= 1) {
-		killed = l_->head; 
-		dummie = killed->next; 
-		while( dummie != NULL ) {
-			free(killed); 
-			killed = dummie; 
-			dummie = dummie->next; 
-		}
-		free(killed);
-	}
-	free(l_);
 }

@@ -1,3 +1,15 @@
+/*
+ * Archivo: main.c/.main.h
+ *
+ * Descripcion:	Recibe un directorio, busca todos los archivos que terminan en
+ * 				.txt, lee su contendo y lo ordena el listas de frecuencia usando
+ * 				hilos.
+ *
+ * Autores:
+ * 	Carlos Alejandro Sivira Munoz		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ *
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -13,9 +25,9 @@
 #define ARGV_DESP 0
 #define SEM_COUNT 1
 #define SEM_SHARED_WITH 0
-/*-----------------------------------STRUCTURAS-------------------------------*/
-/*Tipo: thread_vars_t
- *------------STRUCTURAS
+/*-----------------------------------ESTRUCTURAS------------------------------*/
+/*	Tipo: thread_vars_t
+ *	-------------------
  *		Tipo para manejar los datos compartidos entre hilos.	
  *
  *	files: Archivos quen contienen palabras a leer.
@@ -27,14 +39,14 @@ typedef struct thread_vars_struct{
 	list *main_list;
 	int num_files;
 }thread_vars_t;
-/*-----------------------------------STRUCTURAS-------------------------------*/
+/*-----------------------------------ESTRUCTURAS------------------------------*/
 /*-------------------------------VARIABLES GLOBALES---------------------------*/
 int global_index;/*Contador de archivos leidos*/
 sem_t sem_merge;/*Semaforo que controla el acceso a global_index*/
 sem_t sem_index;/*Semaforo que controla el acceso a main_list*/
 /*-------------------------------VARIABLES GLOBALES---------------------------*/
-/* freecpalSortedList
- * --------------
+/* 	freecpalList
+ * 	------------------
  *  	Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
  *  	lee cada palabra del archivo y la inserta en una "lista de frecuencias".
  *
@@ -43,7 +55,7 @@ sem_t sem_index;/*Semaforo que controla el acceso a main_list*/
  *	arg: Structura que contiene la informacion que comparten los hilos 
  *
  */
-void *freecpalSortedList(void *arg){
+void *freecpalList(void *arg){
 	/*----------------------------------VARIABLES-----------------------------*/
     thread_vars_t *vars;
     FILE *fp;
@@ -106,7 +118,6 @@ void *freecpalSortedList(void *arg){
 			}
 		}
 		fclose(fp);
-		
 		/*-----------------------------REGION CRITICA ------------------------*/
 		sem_wait(&sem_merge);
 			listMerge(vars->main_list, my_list);
@@ -115,8 +126,8 @@ void *freecpalSortedList(void *arg){
 		free(current_word);
 	} while (index >= 0);
 }
-/* isFileAvailable
- * --------------
+/* 	isFileAvailable
+ * 	---------------
  *  	Verifica si hay archivos disponibles que un hilo pueda procesar.
  * 		
  *	n: Numero total de archivos a leer. 
@@ -131,8 +142,8 @@ int isFileAvailable(int n){
 		return -1;
 	}
 }
-/* main
- * --------------
+/* 	main
+ * 	--------------
  *		Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello,
  *		mediante el uso de hilos, lee cada palabra de un archivo y las inserta
  *		en una "lista de frecuencias".
@@ -148,32 +159,29 @@ int main(int argc, char *argv[]){
 	/*----------------------------------VARIABLES-----------------------------*/
 	thread_vars_t *thread_vars;
 	list *main_list;
-    pthread_t t_ids[MAX_THREADS];
+    pthread_t *t_ids;
 	char **paths;
-    int i, n_thread, n_files;
+    int i, n_thread, n_files, trash;
 	/*----------------------------------VARIABLES-----------------------------*/
 	/*Se reserva el espacio a utilizar*/
 	thread_vars = (thread_vars_t*)malloc(sizeof(thread_vars));
 	main_list = (list*)malloc(sizeof(list));
 	/*Se salvan los datos suministrados*/
 	n_thread = atoi(argv[1]);
-
-	global_index = -1; /*Se inicializa el contador*/
-	/*Numero de maximo de hilos que el usuario puede solicitar*/
-	if(n_thread > MAX_THREADS){
-		printf("Can't use more than %i threads\n", MAX_THREADS);
-		free(thread_vars);
-		free(main_list);
-		exit(-1);
-	}
-
-	/*Ubico los archivos a procesar*/
-	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE);
-	if (paths == NULL ) { 
+	/*Arreglo de identificadores de hilos*/
+	t_ids = malloc(sizeof(pthread_t*)*n_thread);
+	if (t_ids == NULL ) { 
 		perror("MALLOC");
 		exit(-1); 
 	}
-	/*Es salvada la cantidad de archivos a procesar*/
+	global_index = -1; /*Se inicializa el contador*/
+	/*Archivos a procesar*/
+	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE);
+	if (paths == NULL) { 
+		perror("MALLOC");
+		exit(-1); 
+	}
+	/*Cantidad de archivos a procesar*/
 	n_files = myFind(argv[2], &paths); 
 	printf("numero de archivos encontrados: %d\n",n_files);
 	printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));
@@ -190,9 +198,9 @@ int main(int argc, char *argv[]){
 	archivos como el numero de hilos a utilizar*/
 	n_thread = (n_thread >= n_files ? n_files : n_thread);
 
-    /*Creacion de los hilos con la funcion freecpalSortedList*/
+    /*Creacion de los hilos con la funcion freecpalList*/
     for (i = 0; i < n_thread; i++){
-        if (pthread_create(&t_ids[i], NULL, *freecpalSortedList, thread_vars) != 0){        
+        if (pthread_create(&t_ids[i], NULL, *freecpalList, thread_vars) != 0){
             perror("PTHREAD");
 			exit(-2);
         }
@@ -209,14 +217,12 @@ int main(int argc, char *argv[]){
 	/*Muestra del contenido de la lista*/
 	listSort(main_list);
 	listPrint(main_list);
-
 	/*Se libera la memoria*/
     sem_destroy(&sem_index);
 	sem_destroy(&sem_merge);
 	free(main_list);
 	free(thread_vars);
 	free(paths);
-	
 	/*El hilo principal termina*/
     pthread_exit(NULL);
 }

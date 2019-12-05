@@ -1,14 +1,16 @@
 /*
- * Archivo: list.h
+ * Archivo: list.c/.list.h
  *
- * Descripcion: Archivo de cabecera para las estructuras de datos list y node.
+ * Descripcion:	Implementacion de lista doblemente enlazada que contiene
+ * 				palabras con recuencias asociadas.
  *
- * Autor: Cesar Alfonso Rosario Escobar
+ * Autores:
+ * 	Carlos Alejandro Sivira Munoz		15-11377
+ * 	Cesar Alfonso Rosario Escobar		15-11295
+ *
  */
-
 #ifndef __LIST__ 
 #define __LIST__
-
 /*Tipo: node
  *------------
  *	Tipo para manejar a los elementos de una lista de frecuencia de palabras	
@@ -25,8 +27,6 @@ typedef struct list_element{
 	struct list_element *next; 
 	struct list_element *prev;
 } node; 
-
-
 /*Funcion: nodeInit
  *------------
  *	Inicializa un elemento de lista
@@ -35,8 +35,6 @@ typedef struct list_element{
  *	c: cadena de caracteres a insertar
  */
 void nodeInit(node *e, char *c, int f);
-
-
 /*Funcion: nodeSwap
  *------------
  *	Cambia los valores de los atributos "word" y "frequency" entre dos nodos
@@ -44,19 +42,6 @@ void nodeInit(node *e, char *c, int f);
  * 	u,v: apuntadores a los nodos a intercambiar.
  */
 void nodeSwap(node *u, node *v);
-
-/*  Funcion: nodeCompare
- *  --------------
- *	Compara si un nodo es mayor a otro en funcion de su frecuecia y orden 
- *  alfanumerico.
- *
- *	a: apuntador a un nodo.
- *  b: apuntador a un nodo.
- * 
- *  return: 1 si a > b. -1 si a < b. 0 si a = b.
- */
-int nodeCompare(node *a, node *b);
-
 /*Tipo: list
  *------------
  *	Tipo definido para manejar la estructura lista
@@ -69,8 +54,6 @@ typedef struct {
 	node *head, *tail; 
 	int size;
 } list;
-
-
 /*Funcion: listInit
  *------------
  *	Inicializa una lista
@@ -78,8 +61,6 @@ typedef struct {
  *	l: apuntador a la lista a inicializar
  */
 void listInit(list *l);
-
-
 /*Funcion: listSearch
  *------------
  *	Busca un elemento en una lista dada
@@ -87,12 +68,10 @@ void listInit(list *l);
  *	l: apuntador a la lista en donde se realizara la busqueda
  *	e: apuntador al elemento a buscar
  *
- *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo contrario
- *	retorna NULL
+ *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo	
+ *  contrario retorna NULL.
  */
 node* listSearch(list *l, node *e);
-
-
 /*Funcion: listInsert
  *------------
  *	Inserta, o aumenta la frecuencia de un elemento en la lista
@@ -104,19 +83,6 @@ node* listSearch(list *l, node *e);
  *	frecuencia
  */
 int listInsert(list *l, node *e);
-
-/*Funcion: listInsertBetween
- * ------------
- *	Inserta un elemento en una posicion especifica de la lista. 
- *
- *	l: apuntador a la lista en donde se insertara el elemento.
- *  p: apuntador al elemento padre del elemento a insertar.
- *	e: apuntador al elemento a insertar.
- *
- *	retorna: void
- */
-void listInsertBetween(list *l, node *p, node *e);
-
 /*Funcion: listSort
  * ------------
  *	Ordena los elementos de la lista por frecuencia 
@@ -124,7 +90,6 @@ void listInsertBetween(list *l, node *p, node *e);
  *	l: apuntador a la lista a ordenar
  */
 void listSort(list *l);
-
 /*  Funcion: listMerge
  *  --------------
  *	Convina de forma ordenada dos listas.
@@ -134,8 +99,7 @@ void listSort(list *l);
  * 
  *  return: void.
  */
-void listMerge(list *list_a, list *list_b);
-
+int listMerge(list *list_a, list *list_b);
 /*Funcion: listPrint
  *------------
  *	Imprime en consola el contenido de la lista
@@ -143,11 +107,4 @@ void listMerge(list *list_a, list *list_b);
  * 	l: lista a imprimir
  */
 void listPrint(list *l);
-
-
-	/*###*/
-void pipeList(list *l);
-
-	/*###*/
-void listDestroy(list *l);
 #endif
