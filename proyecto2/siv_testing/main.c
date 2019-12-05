@@ -223,6 +223,7 @@ int main(int argc, char *argv[]){
 	free(main_list);
 	free(thread_vars);
 	free(paths);
+	free(t_ids);
 	/*El hilo principal termina*/
     pthread_exit(NULL);
 }
