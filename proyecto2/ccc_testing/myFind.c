@@ -1,7 +1,8 @@
 /*
  * Archivo: nombre.c/.nombre.h
  *
- * Descripcion:	
+ * Descripcion:	Archivo fuente para las funciones asociadas al recorrido 
+ * de directorios
  *
  * Autores:
  * 	Carlos Alejandro Sivira Munoz		15-11377
@@ -32,45 +33,45 @@
 #define MAX(a,b) ((a > b)? a: b) 
 
 
+/* arrangeMod
+ * --------------
+ * Recibe dos enteros y calcula el modulo del maximo entre el minimo de ellos
+ *
+ * 	a: entero a considerar
+ * 	b: entero a considerar
+ */
 int arrangeMod(int a , int b) {
 	return MAX(a,b) % MIN(a,b); 
 }
 
+
 /* extendWords
  * --------------
- *	Actualiza la memoria aloja para un arreglo de string si se acerca a
- *	un multiplo de su tamano alojado actual
- *
+ * Actualiza la memoria alojada para un arreglo de string si se acerca a
+ * un multiplo de su tamano alojado actual
  *
  *	paths: arreglo de strings
- *	next_ceil: multiplo de su tamano actual
+ * 	next_ceil: multiplo de su tamano actual
  *
  */
 void extendWords(char*** paths, int next_ceil) { 
-	char** newpaths; 
-	
-	/*printf("previous size: %d\t address:%p\n",next_ceil, (void*)*paths); */
-
-	if( ( *paths = (char**) realloc(*paths, sizeof(char*) * (next_ceil + REG_SIZE) ) ) == NULL)
+	if( ( *paths = (char**) realloc(*paths, sizeof(char*) * 
+					(next_ceil + REG_SIZE) ) ) == NULL)
 		perror("realloc");
-
-	/*printf("new size: %d\taddress: %p\n", (next_ceil + REG_SIZE) * 4, (void*)*paths ); */
-
-
 }
 
 
 /* isTxt
  * --------------
- * 	Verifica que el sufijo de un string sea ".txt"
- *
+ * Verifica que el sufijo de un string sea ".txt"
  *
  * 	name: string cuyo sufijo se verifica
  */
 int isTxt(char *name) { 
 	int n = strlen(name); 
 
-	if ( n>4 && (name[n-1] == 't') && (name[n-3] == 't') && (name[n-2] == 'x') && (name[n-4] == '.') ) {
+	if ( n>4 && (name[n-1] == 't') && (name[n-3] == 't') && 
+			(name[n-2] == 'x') && (name[n-4] == '.') ) {
 		return TRUE; 
 	}
 
@@ -80,11 +81,28 @@ int isTxt(char *name) {
 
 /* traverseDir
  * --------------
+ * Esta funcion recorre de forma recursiva un arbol de directorios dado un 
+ * directorio raiz, y anade a un arreglo de strings aquellos nombres de
+ * archivo que tengan el sufijo ".txt".
+ *
+ * Para evitar repeticiones por hard links, emplea una tabla de hash
+ * en la que guarda los inodos de cada nuevo archivo encontrado, asi 
+ * si se encuentra otro hard link de un archivo ya revisado, este se evita.
+ *  	
+ * Se utiliza un char*** para poder actualizar el tamano del arreglo de 
+ * strings en caso de que se alcance su cota base, y la nueva direccion se 
+ * preserve luego de la llamada a la funcion.
  *
  *
+ *  	dir: Apuntador a directorio que se recorre
+ *  	dirname: nombre del directorio que se recorre
+ *  	inodes: tabla de hash para inodos
+ *  	paths: direccion de memoria del arreglo de strings
+ *  	ind: Entero usado para indizar el proximo nombre de archivo a guardar
+ *
+ * Retorna el numero de archivos que cumplen los criterios mencionados.
  */
 int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) { 
-
 	int len, term, help; 
 	char path[MAX_PATHNAME], pathname[MAX_PATHNAME]; 
 	DIR *curr_dir;
@@ -98,14 +116,14 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) {
 
 	while( (current_ent = readdir(dir)) != NULL ) { 
 
-		if( strcmp(current_ent->d_name,".")!=0 && strcmp(current_ent->d_name,"..")!=0) 
+		if( strcmp(current_ent->d_name,".")!=0 
+				&& strcmp(current_ent->d_name,"..")!=0) 
 		{
 			strcpy(pathname, path); 		
 			len = strlen( pathname ) ;
 
 			if (pathname[len-1] != '/')
 				strcat(pathname,"/"); 
-
 
 			/* Extiendo el pathname para que incluya el nombre de la 
 			 * entrada actual */
@@ -114,8 +132,7 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) {
 			if(lstat(pathname, &current_st) == -1)
 				perror("stat");
 
-			/*printf("pathname: %s\n",pathname); */
-			
+
 			/*Se ignoraran links simbolicos*/
 			if ( S_ISREG(current_st.st_mode) &&
 				       	isTxt(current_ent->d_name) &&
@@ -128,14 +145,11 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) {
 					extendWords(paths, ind + term + 1); 
 				}
 
-				/*pido el espacio exacto para cada string*/
 				paths[0][ind+term] = (char*) malloc(sizeof(char)*
 					       	strlen(pathname) + 1); 
 
 				if (paths[0][ind+term] == NULL)
 					perror("malloc");
-				/*copio el string, puede traer problemas###*/
-
 
 				strcpy( paths[0][ind+term],pathname);
 				term++;
@@ -156,8 +170,6 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) {
 		}
 	}
 
-
-
 	help += term;
 	return help;  
 }
@@ -170,14 +182,14 @@ int traverseDir(DIR *dir, char *dirname, hasht inodes, char*** paths, int ind) {
  * verifica que ninguno sea un hard link de otro y recupera la lista
  * de pathnames
  *
- *
  * 	dirname: nombre de la raiz del arbol de directorios
+ * 	paths: direccion del arreglo de strings
  *
- * Retorna >0 si hay error, 1 en caso de exito
+ * Retorna el numero de archivos que cumplen un criterio.
  */
 int myFind (char *dirname, char ***paths) { 
 
-	int i_, n_paths;
+	int n_paths;
 	DIR *dir; 
 	struct stat d_stat; 	
 	hasht inodes; 
@@ -189,7 +201,6 @@ int myFind (char *dirname, char ***paths) {
 	if ( stat(dirname, &d_stat) == -1 )
 		perror("stat"); 
 
-	/* Verificar que es un directorio antes de recorrer */
 	if( !S_ISDIR(d_stat.st_mode) ) {
 		fprintf(stderr,"Not a directory\n");
 		exit(-1);
@@ -200,19 +211,8 @@ int myFind (char *dirname, char ***paths) {
 	}
 
 
-	/*fprintf(stderr,"final address within myFind: %p\n", (void *)*paths); */
 	hashtDestroy(inodes);
+	closedir(dir);
 
-	  /* Paths de los archivos encontrados   */
-	/*for(i_=0; i_<n_paths; i_++)   */
-		/*printf("%s\n",paths[0][i_]);   */
 	return n_paths;
-
-
 }
-
-				/*MODULO DEBUGGING*/
-				/*printf("numero de archivos encontrados %d,\t %d %% %d = %d\n",*/
-						/*ind+term,STANDARD_SIZE, ind+term+1,*/
-						/*MAX(STANDARD_SIZE, (ind+term+1))%*/
-				     		/*MIN(STANDARD_SIZE,(ind+term+1) ) );*/

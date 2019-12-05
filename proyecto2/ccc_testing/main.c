@@ -1,7 +1,8 @@
 /*
- * Archivo: nombre.c/.nombre.h
+ * Archivo: main.c
  *
- * Descripcion:	
+ * Descripcion:	Archivo fuente para la rutina principal de la aplicacion
+ * frecpalproc
  *
  * Autores:
  * 	Carlos Alejandro Sivira Munoz		15-11377
@@ -41,14 +42,13 @@
 #define MIN(a,b) (a < b)? a: b;
 
 
-
 /* countFrequencies
  * --------------
- *  	Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
- *  	lee cada palabra del archivo y la inserta en una "lista de frecuencias"
+ * Cuenta el numero de ocurrencias de una palabra en un archivo. Para ello
+ * lee cada palabra del archivo y la inserta en una "lista de frecuencias"
  *
- *  	Recibe los archivos de un arreglo de strings, seleccionando solo un 
- *  	segmento de este.
+ * Recibe los archivos de un arreglo de strings, seleccionando solo un 
+ * segmento de este.
  *
  * 		
  *	my_list:  lista de frecuencias
@@ -58,7 +58,8 @@
  *	reference: se utiliza para desplazarse sobre el arreglo de string 
  *
  */
-void countFrequencies(list *my_list, char** paths, int floor, int ceil, int reference) {
+void countFrequencies(list *my_list, char** paths, int floor, int ceil,
+	       	int reference){
 	int j_; 
 	FILE *fp; 
 
@@ -66,37 +67,35 @@ void countFrequencies(list *my_list, char** paths, int floor, int ceil, int refe
 	char* word_buffer; 
 	node *space;
 
+
 	word_buffer = (char *) malloc( sizeof(char) * WORD_SIZE + 1);
 
-	/*fprintf(stderr,"llego\tpid: %d\n", getpid());		*/
 	for(j_=floor*reference; j_ < floor*reference + ceil  ; j_++) { 
-		/*fprintf(stderr,"i_=%d\n",j_);*/
 	
-
 		if ( !(fp = fopen(paths[j_],"r")) ){
-
-			fprintf(stderr, "%s",paths[j_]);
 			perror("fopen"); 
 		
 			exit(-3); 
 		}
-		/*fprintf(stderr,"llego\n");	*/
-		/*fprintf(stderr,"abrio %d\n", j_ - floor*reference);*/
 
 		while( fscanf(fp,"%s", word_buffer) != EOF) { 
 
-		
-			if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL ) 
+			if ( ( space = (node*) malloc( sizeof(node) ) ) == NULL) 
 				perror("malloc");
 		
-			if( (current_word = (char *) malloc( sizeof(char) * strlen(word_buffer) + 1 )) == NULL)
+			current_word = (char *) malloc( sizeof(char) * 
+					strlen(word_buffer) + 1 );
+			if(current_word == NULL) 	
 				perror("current_word ");
+
 			strcpy(current_word, word_buffer); 
 			nodeInit(space, current_word, 1); 
 		
 			/* En caso de que solo la frecuencia de un elemento 
 			 * se aumente como ese nodo ya esta creado, se libera
-			 * la memoria que se almaceno para insertarlo. */
+			 * la memoria que se almaceno para insertarlo. 
+			 */
+
 			if (listInsert(my_list, space) < 0) {
 				free(current_word);
 				free(space);
@@ -109,20 +108,34 @@ void countFrequencies(list *my_list, char** paths, int floor, int ceil, int refe
 			perror("fclose");
 		
 		free( paths[j_] );
-		
 	} 
-
 	free(word_buffer);
-
 }
 
 
 
 /* main
  * --------------
- *	
+ * Metodo principal de la aplicacion frecpalhilo
  *
+ * El enfoque que se dio para hacer posible esta aplicacion fue:
+ * 	
+ * 	Primero se realiza la busqueda de los archivos a revisar desde el proceso
+ * 	padre, al comienzo del mismo.
  *
+ * 	Despues de esto se calcula la reparticion de archivo a los procesos 
+ * 	contadores y se hacen los fork del proceso merger y los procesos contadores.
+ *
+ * 	Counters: Procesos escritores, abren cada archivo recibido, insertan las 
+ * 	palabras encontradas en una lista de frecuencias y escriben la informacion de 
+ * 	las mismas en un pipe no nominal, para que el merger las lea. 
+ *
+ * 	Merger: Proceso lector, recibira entrada formateada de un pipe no nominal y 
+ * 	la mezclara en una lista de frecuencias final, que sera presentada de forma
+ * 	ordenada por stdout.
+ *
+ * 	Por ultimo, en cada proceso se cierran file descriptors del pipe, se liberan
+ * 	buffers, se hace unlink a semaforos y se cierran.
  */
 int main (int argc, char **argv) { 
 	int n_files, n_ps, quot, rem, aux, i_; 
@@ -151,7 +164,6 @@ int main (int argc, char **argv) {
 
 
 
-
 	/*	Creo pipe	*/
 	if( pipe(pipe_fd)  == -1) {
 		fprintf(stderr, "Error abriendo pipe");
@@ -174,38 +186,32 @@ int main (int argc, char **argv) {
 		perror("sem_unlink");	
 
 
-
 	/*	 Ubico los archivos a procesar		*/
 	paths = (char**) malloc(sizeof(char*) * STANDARD_SIZE); /*perror*/
 	if (paths == NULL )  
 		perror("malloc");
 
 	n_files = myFind(argv[2], &paths); 
-	/*printf("numero de archivos encontrados: %d\n",n_files);*/
-	/*printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));*/
-
 
 
 	/*	Calculo el numero de procesos a usar 	*/
 	n_ps = MIN(atoi(argv[1]), n_files);
 
 
-
-
 	/*	Creo a los semaforos	*/
-	if( ( mutex = sem_open(SMP0, O_CREAT | O_RDWR, MODE, 1) ) == SEM_FAILED ) {
+	if((mutex=sem_open(SMP0, O_CREAT | O_RDWR, MODE, 1)) == SEM_FAILED){
 		perror("sem_open");
 
 		exit(-2); 
 	}
 
-	if( ( smp_r = sem_open(SMP1, O_CREAT | O_RDWR, MODE, n_ps ) ) == SEM_FAILED) {
+	if((smp_r=sem_open(SMP1, O_CREAT | O_RDWR, MODE, n_ps)) == SEM_FAILED){
 		perror("sem_open");
 
 		exit(-2); 
 	}
 
-	if( ( smp_w = sem_open(SMP2, O_CREAT | O_RDWR, MODE, 0) )  == SEM_FAILED) {
+	if((smp_w=sem_open(SMP2, O_CREAT | O_RDWR, MODE, 0))  == SEM_FAILED){
 		perror("sem_open");
 
 		exit(-2); 
@@ -218,17 +224,14 @@ int main (int argc, char **argv) {
 	 *
 	 * 	Luego espera por la escritura al pipe en un semaforo
 	 *
-	 *
 	 * 	Del pipe primero lee una variable "r_controller", que indica si 
 	 * 	un proceso contador ha escrito o si ya termino de escribir. 
 	 * 	En el primer caso, continua leyendo en el formato de escritura
 	 * 	de los procesos contadores.
-	 *
 	 * 	
 	 * 	Este proceso espera hasta que los contadores hayan dejado de 
 	 * 	escribir al pipe, y luego imprime una lista de frecuencias 
 	 * 	ordenada por salida estandar
-	 *
 	 */
 
 	switch( fork() ) 
@@ -272,44 +275,38 @@ int main (int argc, char **argv) {
 				perror("malloc");
 
 
-
 			listInit(freq_list); 
-
 			terminated = 0; 
 
 			while (terminated != n_ps) {
 
 				if( sem_wait(smp_w) == -1) {
 					perror("sem_wait");
-
 					exit(-2);
 				}
 
 				if( sem_wait(mutex)  == -1) {
 					perror("sem_wait");
-
 					exit(-2);
 				}
 
-				/*********************REGION CRITICA *********************/
 
 				read(0, r_controller, sizeof(int) ) ; 
 
  
 				if( *r_controller != -1) { 
-
-
 					/*Inicializo nodo*/
 					dummie = (node *) malloc( sizeof(node) );
 					if( dummie == NULL ) {
 						perror("malloc");
 					}
-					
+
 					/*leo el tamano de la palabra*/
 					read(0, word_size, sizeof(int) ); 
 
 					/*leo la la palabra*/
-					word = (char *) malloc(*word_size*sizeof(char) ); 
+					word = (char *) malloc(*word_size * 
+							sizeof(char) ); 
 					if( word == NULL ) 
 						perror("malloc");
 
@@ -318,29 +315,20 @@ int main (int argc, char **argv) {
 					/*leo la frecuencia*/
 					read(0, frequency, sizeof(int) );
 
-
-
 					nodeInit(dummie, word, *frequency); 
-
 					listInsert(freq_list, dummie);
-
 				}
 				else  
 					terminated++; 
 
 
-				/*********************FIN DE REGION CRITICA *********************/
-
-
 				if( sem_post(mutex)  == -1) {
 					perror("sem_post");
-
 					exit(-2);
 				}
 
 				if( sem_post(smp_r)  == -1) {
 					perror("sem_post");
-
 					exit(-2);
 				}
 				
@@ -355,14 +343,13 @@ int main (int argc, char **argv) {
 			listSort(freq_list);
 			listPrint(freq_list); 
 
-			listDestroy(freq_list);
-
 			exit(0);
 	}
 
 
 
 	/*		 Se calcula la reparticion de archivos		
+	 *
 	 *	Si se piden mas procesos que archivos encontrados, entonces se utilizaran
 	 *	tantos procesos como archivos.
 	 *
@@ -381,10 +368,7 @@ int main (int argc, char **argv) {
 	}
 
 
-	/*	Procesos contadores
-	 *
-	 *
-	 *	Comienzan cerrando los file descriptors del pipe que no se usaran
+	/*		Procesos contadores
 	 *
 	 *	Luego calculan la frecuencia de las palabras en los archivos 
 	 *	recibidos. Esto se almacena en una lista de frecuencias
@@ -465,11 +449,8 @@ int main (int argc, char **argv) {
 
 
 				close(1); 
+				free(my_list); 
 
-
-				listDestroy(my_list); 
-				
-				
 				exit(0);
 
 
@@ -477,8 +458,6 @@ int main (int argc, char **argv) {
 	}
 
 	
-	
-
 	/*	Cierro pipes	*/
 	if( close(pipe_fd[0]) == -1)
 		perror("close");
@@ -486,16 +465,11 @@ int main (int argc, char **argv) {
 	if( close(pipe_fd[1]) == -1)
 		perror("close");
 
-
 	/*	Espero procesos		*/
 	for (i_=0 ; i_<n_ps + 1 ; i_++)   {
-
 		if(  wait(&status)  == -1) 
 			perror("waitpid ");
-
 	}
-
-
 
 	/*	Elimino Semaforos	*/
 	if( sem_unlink(SMP0) == -1)
@@ -507,7 +481,6 @@ int main (int argc, char **argv) {
 	if( sem_unlink(SMP2) == -1)
 		perror("sem_unlink");
 	
-
 	/*	Cierro los semaforos 	*/
 	if( sem_close(mutex) == -1)
 		perror("sem_close");
@@ -519,22 +492,8 @@ int main (int argc, char **argv) {
 		perror("sem_close");
 
 
-	return 0; 
+	exit(0);
 }
 
 
 
-				/*DEBUGGING DE SEMAFOROS*/
-			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
-
-			if( sem_getvalue(reader, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
-
-			if( sem_getvalue(writer, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
-
-			if( sem_getvalue(mutex, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */

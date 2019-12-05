@@ -11,16 +11,21 @@
 #include <string.h>
 #include <semaphore.h>
 #include <errno.h>
+#include <unistd.h>
 #include "list.h"
 
+#define TRUE 1
+#define FALSE 1
 
-/*Funcion: nodeInit
+
+/* nodeInit
  * ------------
- *	Inicializa un elemento de lista, asignando los valores iniciales
- *	de sus atributos. 
+ * Inicializa un elemento de lista, asignando los valores iniciales
+ * de sus atributos. 
  *
  *	e: apuntador al elemento a inicializar
  *	c: cadena de caracteres insertar
+ *	f: frecuencia inicial dada
  */
 void nodeInit(node *e, char* c, int f) {
 	e->next = NULL; 
@@ -30,10 +35,10 @@ void nodeInit(node *e, char* c, int f) {
 }
 
 
-/*Funcion: nodeSwap
+/* nodeSwap
  * ------------
- *	Cambia los valores de los atributos "word" y "frequency" entre 
- *	dos nodos
+ * Cambia los valores de los atributos "word" y "frequency" entre 
+ * dos nodos
  *
  *	u,v: apuntadores a los nodos a intercambiar
  */
@@ -52,9 +57,9 @@ void nodeSwap(node *u, node *v) {
 }
 
 
-/*Funcion: listInit
+/* listInit
  * ------------
- *	Inicializa una lista.			
+ * Inicializa una lista.			
  *
  *	l: apuntador a la lista a inicializar
  */
@@ -64,28 +69,27 @@ void listInit(list *l) {
 }
 
 
-/*Funcion: listSearch
+/* listSearch
  * ------------
- *	Busca un elemento en una lista dada. Para esto, compara el atributo 
- *	"word" del elemento dado, con el atributo "word" de cada nodo en la 
- *	lista. 
+ * Busca un elemento en una lista dada. Para esto, compara el atributo 
+ * "word" del elemento dado, con el atributo "word" de cada nodo en la 
+ * lista. 
+ *
  *
  *	l: apuntador a la lista en donde se realizara la busqueda
  *	e: apuntador al elemento a buscar
  *
- *	retorna: Si encuentra el elemento devuelve un apuntador a el, de lo 
- *	contrario retorna NULL
+ * Retorna: Si encuentra el elemento devuelve un apuntador a el, de lo 
+ * contrario retorna NULL
  */
 node* listSearch(list *l, node *e) {
 
-	/*dummie actua como un iterador sobre los elementos de la lista*/
-	
 	node *dummie = l->head; 	
 	int count = 0;
 
 	while( dummie != NULL ) {
 		
-		if( strcmp(dummie->word, e->word) == 0 ) 
+		if( strcmp(dummie->word, e->word) == 0 )  
 			return dummie; 
 
 		dummie = dummie->next;
@@ -96,33 +100,29 @@ node* listSearch(list *l, node *e) {
 }
 
 
-/*Funcion: listInsert
+/* listInsert
  * ------------
- *	Inserta un elemento en una lista. La funcion se asegura de ajustar cada 
- *	atributo de los elementos a cambiar, asi como atributos de la lista 
- *	(de ser necesario)
+ * Inserta un elemento en una lista. La funcion se asegura de ajustar cada 
+ * atributo de los elementos a cambiar, asi como atributos de la lista 
+ * (de ser necesario)
+ *
  *
  *	l: apuntador a la lista en donde se insertara el elemento
  *	e: apuntador al elemento a insertar
  *
- *	retorna: Un entero que representa si el elemento fue insertado, o se
- *	aumento su frecuencia
+ * retorna: Un entero que representa si el elemento fue insertado, o se
+ * aumento su frecuencia
  */
 int listInsert(list *l, node *e) {
 
-	if (l->size == 0) 
-	{
+	if (l->size == 0) {
 		l->head = e; 
 		l->tail = e;
-		/*e->frequency++;*/
-
 	}
 	else {
 		node *contains = listSearch(l, e); 
 		
-		if (contains != NULL) 
-		{
-			/*contains->frequency++;	*/
+		if (contains != NULL) {
 			contains->frequency += e->frequency; 
 			return -1;
 		}
@@ -130,8 +130,6 @@ int listInsert(list *l, node *e) {
 			(l->tail)->next = e; 
 			e->prev = l->tail; 
 			l->tail = e; 
-			/*e->frequency++; */
-
 		}
 	}
 	l->size++; 
@@ -140,58 +138,59 @@ int listInsert(list *l, node *e) {
 }
 
 
-/*Funcion: listSort
+/* listSort
  * ------------
- *	Ordena los elementos de la lista en forma decreciente por frecuencia, 
- *	y luego, los elementos con la misma frecuencia se ordenan 
- *	alfanumericamente. Todo esto  usando una modificacion del 
- *	algoritmo "insertion Sort"
+ * Ordena los elementos de la lista en forma decreciente por frecuencia, 
+ * y luego, los elementos con la misma frecuencia se ordenan 
+ * alfanumericamente. Todo esto  usando una modificacion del 
+ * algoritmo "insertion Sort"
  *
  *	l: apuntador a la lista a ordenar
  */
-void listSort(list *l) {
+void listSort(list *l_) {
+	
 
-	if (l->size > 1) 
+	if (l_->size > 1) 
 	{
 		/* Se define a i como nodo, para poder usar una copia de 
 		 * sus atributo mientras que j se define como apuntador para 
 		 * realizar modificaciones los atributos del nodo apuntado
 		 */
-		node i = *(l->head)->next; 
-		node *j ;
+		node i_ = *(l_->head)->next; 
+		node *j_ ;
 
 		/* En el caso en el que 2 elementos tengan la misma
 		 * frecuencia, se comparan sus atributos "word" para ver 
 		 * ordenarlos alfanumericamente. 
 		 */
-		while (&i != NULL) { 
+		while ( TRUE ) { 
 
-			j = i.prev; 
-			while(j!=NULL && (i.frequency >= j->frequency) ) { 
+			j_ = i_.prev; 
+			while(j_!=NULL && (i_.frequency >= j_->frequency) ) { 
 
-				if (i.frequency > j->frequency) 
-					nodeSwap(j->next,j);
+				if (i_.frequency > j_->frequency) 
+					nodeSwap(j_->next,j_);
 				else 
-					if ( strcmp(i.word,j->word) < 0 )
-						nodeSwap(j->next,j); 
+					if ( strcmp(i_.word,j_->word) < 0 )
+						nodeSwap(j_->next,j_); 
 					else 
 						break; 
 			
-		       		j=j->prev; 
+		       		j_ = j_->prev; 
 			}		
 
-			if (i.next == NULL)
+			if (i_.next == NULL)
 				break;
 
-			i=*(i.next); 	
+			i_=*(i_.next); 	
 		}
 	}
 }
 
 
-/*Funcion: listPrint
+/* listPrint
  * ------------
- *	Imprime en consola el contenido de la lista
+ * Imprime en consola el contenido de la lista
  *
  * 	l_: lista a imprimir
  */
@@ -212,25 +211,21 @@ void listPrint(list *l_) {
 }
 
 
-/*Funcion: listPrintRC
+/* listPrintRC
  * ------------
- *	Escribe los elementos de una lista en formato: 
- *		w_controller word_size word frequency
- *	para que sean leidos en un pipe.
+ * Escribe los elementos de una lista en formato: 
+ *	w_controller word_size word frequency
+ * para que sean leidos en un pipe.
  *	
- *	Si se asigna w_controller = 0 sirve para indicar que se escribiran el 
- *	resto de los campos, pero si w_controller = -1, entonces significa que
- *	ya se termino de escribir la lista al pipe, o que la lista esta vacia, 
- *	segun sea el caso.
- *
- *		
+ * Si se asigna w_controller = 0 sirve para indicar que se escribiran el 
+ * resto de los campos, pero si w_controller = -1, entonces significa que
+ * ya se termino de escribir la lista al pipe, o que la lista esta vacia, 
+ * segun sea el caso.
  *
  * 	l_: lista a escribir
  * 	mutex: semaforo de exclusion mutua.
  * 	reader: Semaforo que maneja a los "lectores"
  * 	writer: Semaforo que maneja a los "escritores"
- * 	
- *
  */
 void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 	int *w_controller, *word_size, i_; 
@@ -246,25 +241,24 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 		perror("malloc"); 
 
 
-	if (l_->size==0)  {
-
+	if (l_->size==0) {
 		if( sem_wait(reader)  == -1) 
 			perror("sem_wait");
-
 
 		if( sem_wait(mutex)  == -1) 
 			perror("sem_wait");
 
+
 		*w_controller = -1; 
 
 		write(1, w_controller, sizeof(int) ); 
+
 
 		if( sem_post(mutex) == -1 ) 
 			perror("sem_post"); 
 
 		if( sem_post(writer)  == -1) 
 			perror("sem_post");
-
 	}
 	else if (l_->size > 0) {
 		dummie = l_->head;
@@ -274,12 +268,8 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 			if( sem_wait(reader)  == -1)
 				perror("sem_wait");
 
-
 			if( sem_wait(mutex)  == -1)
 				perror("sem_wait");
-
-
-			/*********************REGION CRITICA*********************/
 
 
 			if ( i_ == l_->size ) {
@@ -309,9 +299,9 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 					perror("write");
 
 				free(dummie->word); 
-			/*********************FIN DE LA REGION CRITICA	*********************/
 
 			}
+
 
 			if( sem_post(mutex) == -1) 
 				perror("sem_post");
@@ -319,16 +309,12 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 			if( sem_post(writer) == -1) 
 				perror("sem_post");
 	
-
 			if( dummie != NULL )  {
 				cached = dummie; 
 				dummie = dummie->next;
 				free(cached);
 			}
-			
-
 		}
-
 	}
 
 	free(w_controller); 
@@ -336,14 +322,11 @@ void listPrintRC(list *l_, sem_t *mutex, sem_t *reader, sem_t *writer) {
 } 
 
 
-
 /* listDestroy
  * --------------
- *	Libera la memoria ocupada por una lista.
- *
+ * Libera la memoria ocupada por una lista.
  *
  * 	l_: lista a liberar
- *
  */
 void listDestroy(list *l_) { 
 	node *dummie; 
@@ -363,18 +346,3 @@ void listDestroy(list *l_) {
 
 	free(l_);
 }
-
-				/*DEBUGGING DE SEMAFOROS*/
-			/*fprintf(stderr,"#####COUNTER INSIDE RC DBG#####%d\n",getpid());
-
-			if( sem_getvalue(reader, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de reader:  %d\n", *deb_semval); 
-
-			if( sem_getvalue(writer, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de writer:  %d\n", *deb_semval); 
-
-			if( sem_getvalue(mutex, deb_semval)  == -1)
-				perror("sem_getvalue");
-			fprintf(stderr,"  Valor de mutex:  %d\n", *deb_semval); */

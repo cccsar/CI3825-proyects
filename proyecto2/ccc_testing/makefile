@@ -1,8 +1,8 @@
 
-OPTS=-ansi -g -Wall -Wpedantic
+OPTS=-ansi -Wpedantic
 
-freecpalproc: main.o  myFind.o hasht.o singly.o list.o
-	gcc ${OPTS} -o freecpalproc main.o myFind.o hasht.o singly.o list.o -pthread
+frecpalproc: main.o  myFind.o hasht.o singly.o list.o
+	gcc ${OPTS} -o frecpalproc main.o myFind.o hasht.o singly.o list.o -pthread
 
 main.o: main.c myFind.h list.h
 	gcc ${OPTS} -c main.c -pthread 
@@ -20,4 +20,4 @@ list.o: list.c list.h
 	gcc ${OPTS} -c list.c
 
 clean:
-	rm -rfv *.o freecpalproc freecpal
+	rm -rfv *.o frecpalproc
