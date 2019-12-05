@@ -10,7 +10,7 @@
 #define WORD_SIZE 20
 #define MAX_THREADS 1000 
 #define STANDARD_SIZE 419 
-#define ARGV_DESP 3
+#define ARGV_DESP 0
 #define SEM_COUNT 1
 #define SEM_SHARED_WITH 0
 /*-----------------------------------STRUCTURAS-------------------------------*/
@@ -71,7 +71,7 @@ void *freecpalSortedList(void *arg){
 		/*-----------------------------REGION CRITICA ------------------------*/
 		if(index == -1){/*No hay mas archivos para leer*/
 			free(my_list);
-			pthread_exit(NULL);
+			pthread_exit((void*)0);
 		}
 
 		if (!(fp = fopen(vars->files[index + ARGV_DESP],"r"))){ 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]){
 	main_list = (list*)malloc(sizeof(list));
 	/*Se salvan los datos suministrados*/
 	n_thread = atoi(argv[1]);
-	n_files = (int)atoi(argv[2]);
+
 	global_index = -1; /*Se inicializa el contador*/
 	/*Numero de maximo de hilos que el usuario puede solicitar*/
 	if(n_thread > MAX_THREADS){
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]){
 		perror("MALLOC");
 		exit(-1); 
 	}
-
+	/*Es salvada la cantidad de archivos a procesar*/
 	n_files = myFind(argv[2], &paths); 
 	printf("numero de archivos encontrados: %d\n",n_files);
 	printf("direccion de path %p\t tamano: %d\n",(void*) paths, malloc_usable_size(paths));
@@ -215,8 +215,8 @@ int main(int argc, char *argv[]){
 	sem_destroy(&sem_merge);
 	free(main_list);
 	free(thread_vars);
-	free(paths)
-
+	free(paths);
+	
 	/*El hilo principal termina*/
     pthread_exit(NULL);
 }

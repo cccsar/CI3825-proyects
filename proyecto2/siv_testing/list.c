@@ -98,6 +98,7 @@ int listInsert(list *l, node *e) {
 	}else {
 		node *contains = listSearch(l, e);
 		if (contains != NULL){
+			if(e->frequency == 0) e->frequency++;
 			contains->frequency += e->frequency;
 			return -1;
 		}else {
