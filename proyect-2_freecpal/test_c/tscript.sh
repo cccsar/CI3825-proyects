@@ -102,3 +102,6 @@ function maldito() {
 	done
 	cd ../;
 }
+
+export easy; 
+
