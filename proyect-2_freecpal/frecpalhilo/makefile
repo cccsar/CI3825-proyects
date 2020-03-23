@@ -20,4 +20,4 @@ list.o: list.c list.h
 	gcc ${OPTS} -c list.c
 
 clean:
-	rm -rfv *.o freecpalhilo freecpal
+	rm -rfv *.o frecpalhilo freecpal

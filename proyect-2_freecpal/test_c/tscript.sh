@@ -2,23 +2,6 @@
 
 #Testing retrieval of paths 
 
-if [ "$1" = "easy" ] ; then
-	easy;
-elif [ "$1" = "medium" ] ; then
-	medium; 
-elif [ "$1" = "hard" ] ; then
-	hard $2 ;
-elif [ "$1" = "links" ] ; then
-	links ;
-elif [ "$1" = "xiao" ] ; then
-	xiao;
-elif [ "$1" = "maldito" ] ; then
-	maldito; 
-elif [ "$1" = "fumado" ] ; then
-	fumado; 
-elif [ "$1" = "prueba" ] ; then
-	generateTrash; 
-fi
 
 function easy() {
 	mkdir easy; 
@@ -44,7 +27,7 @@ function hard() {
 	mkdir hard; 
 	cd hard; 
 	for i in {1..$1}; do 
-		if [ $(( "$i"%2 )) -eq 0 ] ; then 
+		if [ $(( $i%2 )) -eq 0 ] ; then 
 			touch {1..$(($i*5))}.txt; 
 		else  
 			touch {1..$i}.txt;
@@ -103,5 +86,20 @@ function maldito() {
 	cd ../;
 }
 
-export easy; 
-
+if [ "$1" = "easy" ] ; then
+	easy;
+elif [ "$1" = "medium" ] ; then
+	medium; 
+elif [ "$1" = "hard" ] ; then
+	hard $2 ;
+elif [ "$1" = "links" ] ; then
+	links ;
+elif [ "$1" = "xiao" ] ; then
+	xiao;
+elif [ "$1" = "maldito" ] ; then
+	maldito; 
+elif [ "$1" = "fumado" ] ; then
+	fumado; 
+elif [ "$1" = "prueba" ] ; then
+	generateTrash; 
+fi
