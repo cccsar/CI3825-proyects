@@ -1,4 +1,3 @@
-# Operating Systems
+# CI3825-proyects
 
-A repo for proyects and tasks for the course Operating Systems I
-
+Proyects for *Operating systems* - CI3825 subject.
